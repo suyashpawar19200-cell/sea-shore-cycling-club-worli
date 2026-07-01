@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | CycleRide</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="top-nav">
+      <a href="/" class="brand">CycleRide</a>
+      <div class="nav-links">
+        <a href="/products">Products</a>
+        <a href="/cart">Cart <span data-cart-count>0</span></a>
+        <a href="/contact">Contact</a>
+        <a href="/login">Login</a>
+      </div>
+    </nav>
+
+    <main class="page">
+      <section class="section">
+        <div class="card login-card">
+          <h1>Admin & Manager access</h1>
+          <p class="muted">Create staff credentials with OTP first, then sign in with your password.</p>
+
+          <div class="form-section">
+            <h3>Create staff credentials</h3>
+            <p class="muted">OTP will be sent to the phone number you enter via SMS. If SMS is not configured, the code will be shown here and logged on the server.</p>
+            <form id="staff-create-form">
+              <label>Phone<input name="phone" required /></label>
+              <label>Role<select name="role" required>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+              </select></label>
+              <label>New password<input name="password" type="password" required /></label>
+              <label>OTP code<input name="otp" autocomplete="one-time-code" required /></label>
+              <div class="card-footer" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start;">
+                <button class="btn btn-secondary" type="button" id="send-otp-btn" style="display: inline-block; visibility: visible; background: var(--primary); color: white; border: 1px solid var(--primary);">Send OTP</button>
+                <button class="btn btn-primary" type="submit">Create credentials</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="form-section">
+            <h3>Admin login</h3>
+            <form id="admin-login-form">
+              <label>Phone<input name="phone" required /></label>
+              <label>Password<input name="password" type="password" required /></label>
+              <button class="btn btn-primary" type="submit">Sign in as admin</button>
+            </form>
+          </div>
+
+          <div class="form-section">
+            <h3>Manager login</h3>
+            <p class="muted">Use the phone number and password you created above to sign in as manager.</p>
+            <form id="manager-login-form">
+              <label>Phone<input name="phone" required /></label>
+              <label>Password<input name="password" type="password" required /></label>
+              <button class="btn btn-secondary" type="submit" style="display: inline-block; visibility: visible; background: var(--primary); color: white; border: 1px solid var(--primary);">Sign in as manager</button>
+            </form>
+          </div>
+
+          <p id="login-message" class="message"></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script>
+      const adminForm = document.getElementById('admin-login-form');
+      const managerForm = document.getElementById('manager-login-form');
+      const createForm = document.getElementById('staff-create-form');
+      const sendOtpButton = document.getElementById('send-otp-btn');
+      const message = document.getElementById('login-message');
+
+      function showMessage(text, isError = false) {
+        message.textContent = text;
+        message.style.color = isError ? '#b42318' : 'var(--primary)';
+      }
+
+      async function submitStaffLogin(event, form, role) {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(form).entries());
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, role })
+        });
+        const result = await response.json();
+        if (result.success) {
+          localStorage.setItem('cycleride-token', result.token);
+          window.location.href = role === 'admin' ? '/admin' : '/manager';
+        } else {
+          showMessage(result.error || 'Login failed', true);
+        }
+      }
+
+      async function sendOtpForSetup(event) {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(createForm).entries());
+        if (!payload.phone || !payload.role) {
+          showMessage('Enter the phone number and choose a role first.', true);
+          return;
+        }
+        const response = await fetch('/api/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: payload.phone, role: payload.role })
+        });
+        const result = await response.json();
+        if (result.otp) {
+          showMessage(`${result.message} OTP: ${result.otp}`);
+        } else {
+          showMessage(result.message || 'OTP request complete.');
+        }
+      }
+
+      createForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(createForm).entries());
+        if (!payload.phone || !payload.role || !payload.password || !payload.otp) {
+          showMessage('Enter phone, role, password, and OTP to create credentials.', true);
+          return;
+        }
+        const response = await fetch('/api/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, role: payload.role })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showMessage(result.message || 'Credentials created successfully.');
+          createForm.reset();
+        } else {
+          showMessage(result.error || 'Unable to create credentials.', true);
+        }
+      });
+
+      sendOtpButton.addEventListener('click', sendOtpForSetup);
+      adminForm.addEventListener('submit', (event) => submitStaffLogin(event, adminForm, 'admin'));
+      managerForm.addEventListener('submit', (event) => submitStaffLogin(event, managerForm, 'manager'));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+[
+  {
+    "phone": "9082145455",
+    "role": "manager",
+    "password": "$2a$10$1fwl/zuhCXASJtV1JReL4uKQPVd5VV5eY8AMKJQfr88ncuRiy1MQW"
+  },
+  {
+    "phone": "9082145455",
+    "role": "admin",
+    "password": "$2a$10$NG5cSjlJnc2z4QI0UFVUdOSljs5qq0M29Bqo.dE1bKpOVx61V7qlG"
+  },
+  {
+    "phone": "123456789",
+    "role": "manager",
+    "password": "$2a$10$7VwlfQ9fXVxoqQx1/0AnvOKhZbsaHGheyz/2i8Qe6sVU.IcUnZ0cq"
+  }
+]

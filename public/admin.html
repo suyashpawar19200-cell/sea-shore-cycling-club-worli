@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard | CycleRide</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+      .admin-nav { display: flex; gap: 10px; margin-bottom: 20px; }
+      .admin-nav button { padding: 8px 16px; border: 1px solid #ddd; background: #f5f5f5; cursor: pointer; border-radius: 4px; }
+      .admin-nav button.active { background: #007bff; color: white; }
+      .section-content { display: none; }
+      .section-content.active { display: block; }
+      .billing-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      .billing-table th, .billing-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+      .billing-table th { background: #f5f5f5; font-weight: bold; }
+      .billing-table tr:hover { background: #f9f9f9; }
+      .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+      .status-paid { background: #d4edda; color: #155724; }
+      .status-pending { background: #fff3cd; color: #856404; }
+      .status-confirmed { background: #d1ecf1; color: #0c5460; }
+      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+      .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff; }
+      .stat-value { font-size: 28px; font-weight: bold; color: #007bff; }
+      .stat-label { font-size: 14px; color: #666; margin-top: 5px; }
+    </style>
+  </head>
+  <body>
+    <nav class="top-nav">
+      <a href="/" class="brand">CycleRide</a>
+      <div class="nav-links">
+        <a href="/admin">Admin</a>
+        <a href="/logout">Logout</a>
+      </div>
+    </nav>
+    <main class="page">
+      <section class="section">
+        <h1>Admin Dashboard</h1>
+        
+        <div class="admin-nav">
+          <button class="nav-btn active" onclick="showSection(event, 'overview')">Overview</button>
+          <button class="nav-btn" onclick="showSection(event, 'billing')">Billing Records</button>
+          <button class="nav-btn" onclick="showSection(event, 'orders')">Orders</button>
+          <button class="nav-btn" onclick="showSection(event, 'messages')">Messages</button>
+        </div>
+
+        <!-- Overview Section -->
+        <div id="overview" class="section-content active">
+          <h2>Overview</h2>
+          <div class="stats-grid" id="stats-grid"></div>
+          <div id="admin-content" class="product-grid"></div>
+        </div>
+
+        <!-- Billing Records Section -->
+        <div id="billing" class="section-content">
+          <h2>Billing Records</h2>
+          <div id="billing-filters" style="margin-bottom: 20px;">
+            <input type="text" id="search-billing" placeholder="Search by customer name or phone..." style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="filterBilling()" style="padding: 8px 16px; margin-left: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Search</button>
+          </div>
+          <table class="billing-table" id="billing-table">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Customer Name</th>
+                <th>Phone</th>
+                <th>Rental Date</th>
+                <th>Amount (₹)</th>
+                <th>Deposit (₹)</th>
+                <th>Total (₹)</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="billing-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Orders Section -->
+        <div id="orders" class="section-content">
+          <h2>All Orders</h2>
+          <div id="orders-list"></div>
+        </div>
+
+        <!-- Messages Section -->
+        <div id="messages" class="section-content">
+          <h2>Messages</h2>
+          <div id="messages-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      function showSection(evt, sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // Show selected section
+        document.getElementById(sectionId).classList.add('active');
+        if (evt && evt.target) evt.target.classList.add('active');
+        
+        // Load data for the section
+        if (sectionId === 'billing') {
+          loadBilling();
+        } else if (sectionId === 'orders') {
+          loadOrders();
+        } else if (sectionId === 'messages') {
+          loadMessages();
+        }
+      }
+
+      async function ensureAdminSession() {
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/session', { headers: { 'x-auth-token': token } });
+        const data = await response.json();
+        if (!data.authenticated || data.role !== 'admin') {
+          localStorage.removeItem('cycleride-token');
+          window.location.href = '/admin-login';
+          return false;
+        }
+        return true;
+      }
+
+      async function loadData() {
+        const token = localStorage.getItem('cycleride-token') || '';
+        
+        try {
+          const [ordersRes, messagesRes, billingRes] = await Promise.all([
+            fetch('/api/orders', { headers: { 'x-auth-token': token } }),
+            fetch('/api/messages', { headers: { 'x-auth-token': token } }),
+            fetch('/api/billing', { headers: { 'x-auth-token': token } })
+          ]);
+
+          const orders = await ordersRes.json();
+          const messages = await messagesRes.json();
+          const billing = await billingRes.json();
+
+          // Calculate stats
+          const totalOrders = Array.isArray(orders) ? orders.length : 0;
+          const totalMessages = Array.isArray(messages) ? messages.length : 0;
+          const totalBilling = Array.isArray(billing) ? billing.length : 0;
+          const totalRevenue = Array.isArray(billing) ? billing.reduce((sum, b) => sum + (b.total || 0), 0) : 0;
+
+          // Display stats
+          const statsGrid = document.getElementById('stats-grid');
+          statsGrid.innerHTML = `
+            <div class="stat-card">
+              <div class="stat-value">${totalOrders}</div>
+              <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${totalBilling}</div>
+              <div class="stat-label">Total Billings</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">₹${totalRevenue.toLocaleString()}</div>
+              <div class="stat-label">Total Revenue</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${totalMessages}</div>
+              <div class="stat-label">Unread Messages</div>
+            </div>
+          `;
+
+          // Store billing data globally for filtering
+          window.allBilling = billing;
+          displayBilling(billing);
+        } catch (err) {
+          console.error('Error loading data:', err);
+        }
+      }
+
+      function displayBilling(billing) {
+        const tbody = document.getElementById('billing-body');
+        if (!Array.isArray(billing) || billing.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">No billing records found</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = billing.map(bill => `
+          <tr>
+            <td>${bill.invoiceNumber || 'N/A'}</td>
+            <td>${bill.customerName || 'N/A'}</td>
+            <td>${bill.phone || 'N/A'}</td>
+            <td>${bill.rentalDate || 'N/A'}</td>
+            <td>₹${(bill.subtotal + (bill.rentalAmount || 0)).toFixed(2)}</td>
+            <td>₹${(bill.deposit || 500).toFixed(2)}</td>
+            <td><strong>₹${(bill.total || 0).toFixed(2)}</strong></td>
+            <td>${bill.paymentMethod || 'N/A'}</td>
+            <td>
+            <span class="status-badge status-${bill.status?.replace(' ', '-').toLowerCase()}">${bill.status || 'Pending'}</span>
+            ${bill.status === 'upi pending' ? `<button class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:12px;" onclick="approveOrder('${bill.id}')">Approve</button>` : ''}
+          </td>
+            <td>${bill.date || 'N/A'}</td>
+          </tr>
+        `).join('');
+      }
+      async function approveOrder(orderId) {
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/orders/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+          body: JSON.stringify({ orderId })
+        });
+        if (response.ok) {
+          loadData();
+        } else {
+          const result = await response.json();
+          alert(result.error || 'Approval failed');
+        }
+      }
+      function loadBilling() {
+        displayBilling(window.allBilling || []);
+      }
+
+      function filterBilling() {
+        const searchText = document.getElementById('search-billing').value.toLowerCase();
+        const filtered = (window.allBilling || []).filter(bill => 
+          (bill.customerName || '').toLowerCase().includes(searchText) ||
+          (bill.phone || '').toLowerCase().includes(searchText)
+        );
+        displayBilling(filtered);
+      }
+
+      async function loadOrders() {
+        const token = localStorage.getItem('cycleride-token') || '';
+        try {
+          const res = await fetch('/api/orders', { headers: { 'x-auth-token': token } });
+          const orders = await res.json();
+          const list = document.getElementById('orders-list');
+          list.innerHTML = Array.isArray(orders) && orders.length > 0 
+            ? orders.map(o => `<div class="card"><p><strong>${o.customerName}</strong> - ${o.phone}</p><p>Status: ${o.status}</p></div>`).join('')
+            : '<p>No orders found</p>';
+        } catch (err) {
+          console.error('Error loading orders:', err);
+        }
+      }
+
+      async function loadMessages() {
+        const token = localStorage.getItem('cycleride-token') || '';
+        try {
+          const res = await fetch('/api/messages', { headers: { 'x-auth-token': token } });
+          const messages = await res.json();
+          const list = document.getElementById('messages-list');
+          list.innerHTML = Array.isArray(messages) && messages.length > 0
+            ? messages.map(m => `<div class="card"><p><strong>${m.name}</strong> (${m.email})</p><p>${m.subject}</p><p class="muted">${m.message}</p></div>`).join('')
+            : '<p>No messages found</p>';
+        } catch (err) {
+          console.error('Error loading messages:', err);
+        }
+      }
+
+      (async () => {
+        const hasSession = await ensureAdminSession();
+        if (hasSession) {
+          loadData();
+        }
+      })();
+    </script>
+  </body>
+</html>

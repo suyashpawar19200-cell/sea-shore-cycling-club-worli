@@ -1,0 +1,85 @@
+[
+  {
+    "id": "BK-1778922689023",
+    "billId": "BILL-1778922689023",
+    "customerName": "suyash",
+    "phone": "9082145455",
+    "rentalDate": "2026-05-23",
+    "rentalTime": "14:44",
+    "duration": 1,
+    "pickupLocation": "Worli Promenade, Mumbai",
+    "paymentMethod": "cash",
+    "subscriptionPlan": "one-time",
+    "subscriptionCost": 0,
+    "items": [
+      {
+        "name": "25-inch Unisex Cycle",
+        "price": 55,
+        "quantity": 3
+      },
+      {
+        "name": "29-inch Unisex Cycle",
+        "price": 70,
+        "quantity": 4
+      }
+    ],
+    "subtotal": 1050,
+    "tax": 0,
+    "deposit": 100,
+    "total": 1150,
+    "date": "16/5/2026, 2:41:29 pm",
+    "status": "confirmed"
+  },
+  {
+    "id": "BK-1778927826225",
+    "billId": "BILL-1778927826225",
+    "customerName": "Suyash Pawar",
+    "phone": "9024145455",
+    "rentalDate": "2026-05-29",
+    "rentalTime": "21:06",
+    "duration": 1,
+    "pickupLocation": "Worli Promenade, Mumbai",
+    "paymentMethod": "cash",
+    "subscriptionPlan": "one-time",
+    "subscriptionCost": 0,
+    "items": [
+      {
+        "name": "25-inch Unisex Cycle",
+        "price": 55,
+        "quantity": 1
+      }
+    ],
+    "subtotal": 150,
+    "tax": 0,
+    "deposit": 100,
+    "total": 250,
+    "date": "16/5/2026, 4:07:06 pm",
+    "status": "confirmed"
+  },
+  {
+    "id": "BK-1778929105264",
+    "billId": "BILL-1778929105264",
+    "customerName": "Suyash Pawar",
+    "phone": "9024145455",
+    "rentalDate": "2026-05-30",
+    "rentalTime": "16:15",
+    "duration": 1,
+    "pickupLocation": "Worli Promenade, Mumbai",
+    "paymentMethod": "cash",
+    "subscriptionPlan": "one-time",
+    "subscriptionCost": 0,
+    "items": [
+      {
+        "name": "25-inch Unisex Cycle",
+        "price": 55,
+        "quantity": 1
+      }
+    ],
+    "subtotal": 150,
+    "tax": 0,
+    "deposit": 100,
+    "total": 250,
+    "date": "16/5/2026, 4:28:25 pm",
+    "status": "confirmed"
+  }
+]

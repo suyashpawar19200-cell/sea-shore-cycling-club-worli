@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Booking | CycleRide</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="top-nav">
+      <a href="/" class="brand">CycleRide</a>
+      <div class="nav-links">
+        <a href="/products">Products</a>
+        <a href="/cart">Cart <span data-cart-count>0</span></a>
+        <a href="/contact">Contact</a>
+        <a href="/staff-login">Staff login</a>
+      </div>
+    </nav>
+
+    <main class="page">
+      <section class="section checkout-layout">
+        <div class="card billing-card">
+          <div class="step-indicator" aria-label="Booking steps">
+            <span class="step-pill active" data-step-pill="1">1. Information</span>
+            <span class="step-pill" data-step-pill="2">2. Payment</span>
+            <span class="step-pill" data-step-pill="3">3. Billing</span>
+          </div>
+
+          <div id="step-info" class="booking-step">
+            <h1>Booking information</h1>
+            <p class="muted">Enter your ride details once. We will use the same information for payment and billing.</p>
+
+            <form id="booking-info-form">
+              <label>Full Name<input type="text" name="customerName" required /></label>
+              <label>Phone<input type="tel" name="phone" required /></label>
+              <label>Email<input type="email" name="email" placeholder="your@email.com" /></label>
+              <label>Rental Date<input type="date" name="rentalDate" required /></label>
+              <label>Rental Time<input type="time" name="rentalTime" required /></label>
+              <label>Duration (hours)<input type="number" name="duration" min="1" value="1" required /></label>
+              <label>Pickup Location<input type="text" name="pickupLocation" value="Worli Promenade, Mumbai" /></label>
+              <button class="btn btn-primary" type="submit">Continue to payment</button>
+            </form>
+          </div>
+
+          <div id="step-payment" class="booking-step hidden">
+            <h2>Payment</h2>
+            <p class="muted">Your information will be used for the booking and invoice. No extra details are needed here.</p>
+
+            <div class="booking-summary-block">
+              <p><strong>Name:</strong> <span id="summary-name">-</span></p>
+              <p><strong>Phone:</strong> <span id="summary-phone">-</span></p>
+              <p><strong>Rental:</strong> <span id="summary-datetime">-</span></p>
+              <p><strong>Pickup:</strong> <span id="summary-pickup">-</span></p>
+            </div>
+
+            <label>Payment Method
+              <select id="payment-method" required>
+                <option value="">Select payment method</option>
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+              </select>
+            </label>
+            <p id="payment-note" class="muted" style="display:none;"></p>
+            <div id="upi-qr" class="qr-box hidden">
+              <div class="qr-placeholder">QR code placeholder</div>
+              <p class="muted">Scan this UPI QR code with your UPI app. After payment, admin/manager will approve and share the bill.</p>
+            </div>
+
+            <div class="step-actions">
+              <button class="btn btn-secondary" type="button" id="back-to-info">Back</button>
+              <button class="btn btn-primary" type="button" id="confirm-payment">Confirm booking</button>
+            </div>
+          </div>
+
+          <div id="step-billing" class="booking-step hidden">
+            <h2>Billing confirmation</h2>
+            <div class="invoice-card">
+              <div class="billing-details">
+                <p><strong>Invoice Number:</strong> <span id="confirm-invoice"></span></p>
+                <p><strong>Booking ID:</strong> <span id="confirm-booking-id"></span></p>
+                <p><strong>Customer Name:</strong> <span id="confirm-name"></span></p>
+                <p><strong>Rental Date & Time:</strong> <span id="confirm-datetime"></span></p>
+                <p><strong>Payment Method:</strong> <span id="confirm-payment-method"></span></p>
+                <p><strong>Status:</strong> <span id="confirm-status"></span></p>
+                <p><strong>Total Amount:</strong> <span id="confirm-total"></span></p>
+              </div>
+              <div class="step-actions">
+                <span class="muted">Take a screenshot of this invoice. Our team will contact you after a while.</span>
+              </div>
+            </div>
+            <p class="muted">Take a screenshot of this invoice and save it for your records.</p>
+            <p id="billing-message" class="message"></p>
+          </div>
+        </div>
+
+        <aside class="summary-card">
+          <h2>Booking summary</h2>
+          <div class="billing-summary">
+            <div class="summary-row">
+              <span>Rental Items Subtotal</span>
+              <strong id="subtotal-amount">₹0</strong>
+            </div>
+            <div class="summary-row">
+              <span>Rental Amount</span>
+              <strong id="rental-amount">₹0</strong>
+            </div>
+            <div class="summary-row">
+              <span>Security Deposit</span>
+              <strong id="deposit-amount">₹500</strong>
+            </div>
+            <div class="summary-row total">
+              <span>Total Amount</span>
+              <strong id="total-amount">₹0</strong>
+            </div>
+            <ul id="billing-items" class="billing-items-list"></ul>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/js/app.js?v=20260706"></script>
+    <script src="/js/billing.js?v=20260706"></script>
+    <script>
+      const paymentMethodInput = document.getElementById('payment-method');
+      const upiQr = document.getElementById('upi-qr');
+      const paymentNote = document.getElementById('payment-note');
+      const confirmPayment = document.getElementById('confirm-payment');
+
+      function updatePaymentUi() {
+        const method = paymentMethodInput?.value;
+        if (method === 'upi') {
+          upiQr?.classList.remove('hidden');
+          if (paymentNote) {
+            paymentNote.style.display = 'block';
+            paymentNote.textContent = 'Please scan the UPI QR code and complete the payment. Your bill will be shared once approved.';
+          }
+        } else {
+          upiQr?.classList.add('hidden');
+          if (paymentNote) {
+            paymentNote.style.display = method ? 'block' : 'none';
+            paymentNote.textContent = method === 'cash' ? 'Cash payments are collected at pickup.' : '';
+          }
+        }
+      }
+
+      paymentMethodInput?.addEventListener('change', updatePaymentUi);
+      updatePaymentUi();
+
+      confirmPayment?.addEventListener('click', () => {
+        if (paymentMethodInput?.value === 'upi') {
+          alert('UPI selected. Scan the QR code and then continue. Admin/manager will approve your payment when it is received.');
+        }
+      });
+
+    </script>
+  </body>
+</html>

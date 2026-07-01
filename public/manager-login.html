@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manager Login | CycleRide</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="section">
+        <div class="card login-card">
+          <h1 id="page-heading">Manager login</h1>
+          <div id="login-section">
+            <form id="login-form">
+              <label>
+                Phone
+                <input name="phone" type="tel" inputmode="tel" pattern="[0-9+\- ]{7,20}" autocomplete="tel" required />
+              </label>
+              <label>
+                Password
+                <input name="password" type="password" autocomplete="current-password" required />
+              </label>
+              <button class="btn btn-primary" type="submit">Sign in</button>
+            </form>
+            <p class="login-help"><a href="#" class="toggle-reset">Forgot password?</a></p>
+          </div>
+          <div id="reset-section" class="hidden">
+            <form id="reset-form" data-step="send">
+              <label>
+                Phone
+                <input name="phone" type="tel" inputmode="tel" pattern="[0-9+\- ]{7,20}" autocomplete="tel" required />
+              </label>
+              <label>
+                OTP
+                <input name="otp" type="text" inputmode="numeric" pattern="\d{6}" disabled required />
+              </label>
+              <label>
+                New password
+                <input name="password" type="password" autocomplete="new-password" disabled required />
+              </label>
+              <button class="btn btn-primary" type="submit">Send OTP</button>
+            </form>
+            <p class="login-help"><a href="#" id="toggle-reset">Back to sign in</a></p>
+          </div>
+          <p id="message" class="message"></p>
+        </div>
+      </section>
+    </main>
+    <script src="/js/auth.js"></script>
+  </body>
+</html>

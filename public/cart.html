@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cart | CycleRide</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="top-nav">
+      <a href="/" class="brand">CycleRide</a>
+      <div class="nav-links">
+        <a href="/products">Products</a>
+        <a href="/cart">Cart <span data-cart-count>0</span></a>
+        <a href="/contact">Contact</a>
+        <a href="/staff-login">Staff login</a>
+      </div>
+    </nav>
+
+    <main class="page">
+      <section class="section cart-layout">
+        <div>
+          <h1>Your booking cart</h1>
+          <p class="muted">Review your rental details and continue to secure billing and payment.</p>
+          <div id="cart-items"></div>
+          <div id="cart-actions" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="window.CartModal?.showOrderDetails()" class="btn btn-primary" style="flex: 1; min-width: 180px;">View Order Summary</button>
+            <a href="/billing" class="btn btn-secondary" style="flex: 1; min-width: 180px; text-align: center;">Go to Billing</a>
+          </div>
+          <p class="muted" style="margin-top: 12px;">Use the + and - controls beside each rental to reduce the quantity, or cancel everything with the button in the summary.</p>
+        </div>
+        <aside class="summary-card" id="cart-summary"></aside>
+      </section>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/cart.js"></script>
+    <script src="/js/cart-popup.js"></script>
+  </body>
+</html>
