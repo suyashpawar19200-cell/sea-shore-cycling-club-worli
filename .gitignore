@@ -4,7 +4,3 @@ node_modules/
 *.log
 dist/
 build/
-*.sql
-cyclingdb
-*.sql
-*.sql

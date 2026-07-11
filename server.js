@@ -8,6 +8,8 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(cors({ origin: true, credentials: true }));
 app.use(bodyParser.json());
@@ -98,9 +100,14 @@ function verifyPassword(stored, password) {
 }
 
 // Helper functions for data persistence
+function getDataPath(filename) {
+  return path.join(__dirname, filename);
+}
+
 function loadData(filename) {
   try {
-    const data = fs.readFileSync(filename, 'utf8');
+    const filePath = getDataPath(filename);
+    const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
   } catch (err) {
     return [];
@@ -108,7 +115,18 @@ function loadData(filename) {
 }
 
 function saveData(filename, data) {
-  fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+  const filePath = getDataPath(filename);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function ensureDataFiles() {
+  const requiredFiles = ['orders.json', 'messages.json', 'archived-orders.json', 'archived-messages.json', 'otps.json', 'sessions.json', 'admins.json'];
+  for (const file of requiredFiles) {
+    const filePath = getDataPath(file);
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, '[]');
+    }
+  }
 }
 
 async function saveOrderData(order) {
@@ -227,6 +245,7 @@ async function deleteAdmin(phone, role) {
 }
 
 async function initializeData() {
+  ensureDataFiles();
   orders = loadData('orders.json');
   messages = loadData('messages.json');
   archivedOrders = loadData('archived-orders.json');
@@ -247,6 +266,10 @@ let archivedOrders = [];
 let archivedMessages = [];
 
 // Routes
+app.get('/health', (req, res) => {
+  res.json({ ok: true, status: 'healthy' });
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
