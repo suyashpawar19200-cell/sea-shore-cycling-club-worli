@@ -117,7 +117,7 @@
         const data = await response.json();
         if (!data.authenticated || data.role !== 'admin') {
           localStorage.removeItem('cycleride-token');
-          window.location.href = '/admin-login';
+          window.location.href = '/login';
           return false;
         }
         return true;
@@ -190,9 +190,18 @@
             <td><strong>₹${(bill.total || 0).toFixed(2)}</strong></td>
             <td>${bill.paymentMethod || 'N/A'}</td>
             <td>
-            <span class="status-badge status-${bill.status?.replace(' ', '-').toLowerCase()}">${bill.status || 'Pending'}</span>
-            ${bill.status === 'upi pending' ? `<button class="btn btn-secondary" style="margin-left:8px; padding:4px 8px; font-size:12px;" onclick="approveOrder('${bill.id}')">Approve</button>` : ''}
-          </td>
+              <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+                <span class="status-badge status-${bill.status?.replace(' ', '-').toLowerCase()}">${bill.status || 'Pending'}</span>
+                <span style="font-size:12px; color:#6f7282;">Payment: ${bill.paymentStatus || 'pending'}</span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="approveOrder('${bill.id}')">Confirm order</button>
+                  <select style="padding:4px 8px; font-size:12px;" onchange="updatePaymentStatus('${bill.id}', this.value)">
+                    <option value="pending" ${bill.paymentStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="paid" ${bill.paymentStatus === 'paid' ? 'selected' : ''}>Paid</option>
+                  </select>
+                </div>
+              </div>
+            </td>
             <td>${bill.date || 'N/A'}</td>
           </tr>
         `).join('');
@@ -209,6 +218,21 @@
         } else {
           const result = await response.json();
           alert(result.error || 'Approval failed');
+        }
+      }
+
+      async function updatePaymentStatus(orderId, paymentStatus) {
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/orders/payment-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+          body: JSON.stringify({ orderId, paymentStatus })
+        });
+        if (response.ok) {
+          loadData();
+        } else {
+          const result = await response.json();
+          alert(result.error || 'Payment status update failed');
         }
       }
       function loadBilling() {

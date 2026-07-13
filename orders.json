@@ -232,7 +232,8 @@
     "deposit": 500,
     "total": 1000,
     "date": "6/7/2026, 8:39:52 pm",
-    "status": "paid"
+    "status": "confirmed",
+    "paymentStatus": "paid"
   },
   {
     "id": "BK-1783499329978",

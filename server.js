@@ -244,6 +244,19 @@ async function deleteAdmin(phone, role) {
   saveData('admins.json', admins);
 }
 
+function upsertStaffAccount(phone, role, password) {
+  const hashedPassword = hashPassword(password);
+  const existingAdmin = admins.find((admin) => admin.phone === phone && admin.role === role);
+  if (existingAdmin) {
+    existingAdmin.password = hashedPassword;
+  } else {
+    admins.push({ phone, role, password: hashedPassword });
+  }
+  saveData('admins.json', admins);
+  upsertAdmin(phone, role, hashedPassword).catch(() => {});
+  clearLoginAttempts(phone, role);
+}
+
 async function initializeData() {
   ensureDataFiles();
   orders = loadData('orders.json');
@@ -294,16 +307,20 @@ app.get('/contact', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'contact.html'));
 });
 
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
 app.get('/staff-login', (req, res) => {
-  res.redirect('/admin-login');
+  res.redirect('/login');
 });
 
 app.get('/admin-login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+  res.redirect('/login');
 });
 
 app.get('/manager-login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'manager-login.html'));
+  res.redirect('/login');
 });
 
 app.get('/admin', requireAuth, (req, res) => {
@@ -370,6 +387,22 @@ app.post('/api/orders/:id/confirm', requireManager, async (req, res) => {
   res.json({ success:true, message:'Order confirmed successfully.' });
 });
 
+app.post('/api/orders/payment-status', requireAuth, (req, res) => {
+  const { orderId, paymentStatus } = req.body;
+  if (!orderId) return res.status(400).json({ error: 'Missing orderId' });
+  if (!paymentStatus || !['pending', 'paid'].includes(String(paymentStatus).toLowerCase())) {
+    return res.status(400).json({ error: 'paymentStatus must be pending or paid' });
+  }
+
+  const idx = orders.findIndex(o => o.id === orderId || o.billId === orderId);
+  if (idx === -1) return res.status(404).json({ error: 'Order not found' });
+
+  orders[idx].paymentStatus = String(paymentStatus).toLowerCase();
+  saveData('orders.json', orders);
+
+  res.json({ success:true, message:`Payment status set to ${orders[idx].paymentStatus}.` });
+});
+
 app.post('/api/manager/reset-month', requireManager, async (req, res) => {
   const resetMonth = new Date().toISOString().slice(0, 7);
   const archivedAt = new Date().toLocaleString();
@@ -425,7 +458,8 @@ app.post('/api/checkout', async (req, res) => {
     deposit,
     total,
     date: new Date().toLocaleString(),
-    status: paymentMethod === 'upi' ? 'upi pending' : 'cash pending'
+    status: 'pending',
+    paymentStatus: paymentMethod === 'upi' ? 'pending' : 'paid'
   };
 
   orders.push(order);
@@ -475,7 +509,8 @@ app.post('/api/billing', async (req, res) => {
     deposit: deposit || 500,
     total: total || 0,
     date: new Date().toLocaleString(),
-    status: paymentMethod === 'upi' ? 'upi pending' : paymentMethod === 'card' ? 'pending payment' : 'cash pending'
+    status: 'pending',
+    paymentStatus: paymentMethod === 'upi' ? 'pending' : 'paid'
   };
 
   orders.push(order);
@@ -515,6 +550,7 @@ app.get('/api/billing', requireAuth, (req, res) => {
     total: o.total,
     paymentMethod: o.paymentMethod,
     status: o.status,
+    paymentStatus: o.paymentStatus || (o.status === 'confirmed' ? 'paid' : 'pending'),
     date: o.date
   })));
 });
@@ -567,11 +603,6 @@ app.post('/api/send-otp', async (req, res) => {
   }
 
   const normalizedPhone = phone;
-  const existingAdmin = admins.find(a => a.phone === normalizedPhone && a.role === role);
-  if (!existingAdmin && !OTP_ALLOW_ANY) {
-    return res.status(404).json({ success:false, error: 'Account not found for password reset.' });
-  }
-
   if (!canSendOtp(normalizedPhone, role)) {
     return res.status(429).json({ success:false, error: 'Too many OTP requests. Please wait a few minutes before retrying.' });
   }
@@ -595,7 +626,7 @@ app.post('/api/send-otp', async (req, res) => {
       const client = require('twilio')(twilioSid, twilioToken);
       try {
         const msg = await client.messages.create({
-          body: `Your ${role} password reset OTP is ${otp}. It expires in 5 minutes.`,
+          body: `Your ${role} OTP is ${otp}. It expires in 5 minutes.`,
           from: twilioFrom,
           to: normalizedPhone
         });
@@ -611,7 +642,50 @@ app.post('/api/send-otp', async (req, res) => {
     }
   }
 
-  res.json({ success:true, message: 'OTP generated for the phone number you entered. If SMS is not configured, it will be shown here and logged on the server.', otp });
+  res.json({ success:true, message: 'OTP sent successfully.' });
+});
+
+app.post('/api/register', (req, res) => {
+  const phone = sanitizeString(req.body.phone);
+  const otp = sanitizeString(req.body.otp);
+  const role = sanitizeString(req.body.role);
+  const password = sanitizeString(req.body.password);
+  if (!phone || !otp || !role || !password) {
+    return res.status(400).json({ success:false, error: 'Phone, OTP, role, and password are required' });
+  }
+  if (role !== 'admin' && role !== 'manager') {
+    return res.status(400).json({ success:false, error: 'Role must be admin or manager' });
+  }
+
+  const normalizedPhone = phone;
+  const idx = otps.findIndex(o => o.phone === normalizedPhone && o.role === role);
+  if (idx === -1) return res.status(400).json({ success:false, error: 'OTP not found' });
+  const entry = otps[idx];
+  if (Date.now() > entry.expires) {
+    otps.splice(idx, 1);
+    saveData('otps.json', otps);
+    return res.status(400).json({ success:false, error: 'OTP expired' });
+  }
+  if (entry.otp !== String(otp)) {
+    recordFailedLogin(normalizedPhone, role);
+    return res.status(400).json({ success:false, error: 'Invalid OTP' });
+  }
+
+  upsertStaffAccount(normalizedPhone, role, password);
+
+  const token = (Date.now().toString(36) + Math.random().toString(36).slice(2,10));
+  const expires = Date.now() + 24*60*60*1000;
+  sessions = sessions.filter(s => !(s.phone === normalizedPhone && s.role === role));
+  sessions.push({ token, phone: normalizedPhone, role, expires });
+  saveData('sessions.json', sessions);
+  persistSession(token, normalizedPhone, role, expires).catch(() => {});
+
+  otps.splice(idx, 1);
+  saveData('otps.json', otps);
+
+  try { res.cookie('authToken', token, { httpOnly:true, sameSite:'lax', maxAge:24*60*60*1000 }); } catch(e) {}
+
+  res.json({ success:true, token, message: 'Registration successful. Your staff password has been created.' });
 });
 
 app.post('/api/verify-otp', (req, res) => {
@@ -640,18 +714,7 @@ app.post('/api/verify-otp', (req, res) => {
     return res.status(400).json({ success:false, error: 'Invalid OTP' });
   }
 
-  const existingAdmin = admins.find(a => a.phone === normalizedPhone && a.role === role);
-  const hashedPassword = hashPassword(password);
-  if (existingAdmin) {
-    existingAdmin.password = hashedPassword;
-  } else if (OTP_ALLOW_ANY) {
-    admins.push({ phone: normalizedPhone, role, password: hashedPassword });
-  } else {
-    return res.status(404).json({ success:false, error: 'Account not found for password reset.' });
-  }
-
-  saveData('admins.json', admins);
-  upsertAdmin(normalizedPhone, role, hashedPassword).catch(() => {});
+  upsertStaffAccount(normalizedPhone, role, password);
   clearLoginAttempts(normalizedPhone, role);
 
   const token = (Date.now().toString(36) + Math.random().toString(36).slice(2,10));
@@ -666,7 +729,7 @@ app.post('/api/verify-otp', (req, res) => {
 
   try { res.cookie('authToken', token, { httpOnly:true, sameSite:'lax', maxAge:24*60*60*1000 }); } catch(e) {}
 
-  res.json({ success:true, token, message: 'Password reset successfully. You are now signed in.' });
+  res.json({ success:true, token, message: 'Password updated successfully. You are now signed in.' });
 });
 
 function getToken(req) {
@@ -763,6 +826,7 @@ app.post('/api/orders/confirm', requireAuth, (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Order not found' });
 
   orders[idx].status = 'confirmed';
+  orders[idx].paymentStatus = orders[idx].paymentStatus || 'paid';
   saveData('orders.json', orders);
   // send email notification if SMTP configured
   const order = orders[idx];
@@ -865,8 +929,7 @@ async function startServer(port) {
         const server = app.listen(activePort, () => {
           console.log(`🚴 Cycling Brand Website running at http://localhost:${activePort}`);
           console.log(`Open site: http://localhost:${activePort}`);
-          console.log(`Admin login: http://localhost:${activePort}/admin-login`);
-          console.log(`Manager login: http://localhost:${activePort}/manager-login`);
+          console.log(`Staff login: http://localhost:${activePort}/login`);
           console.log(`Products: http://localhost:${activePort}/products`);
           console.log(`Contact: http://localhost:${activePort}/contact`);
           resolve(server);

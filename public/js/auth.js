@@ -103,9 +103,6 @@ resetForm.addEventListener('submit', async (event) => {
       resetForm.password.disabled = false;
       resetForm.querySelector('button[type="submit"]').textContent = 'Reset password';
       resetForm.querySelector('button[type="submit"]').dataset.defaultText = 'Reset password';
-      if (result.otp) {
-        showMessage(`OTP generated: ${result.otp} (use this only if SMS is not configured)`, 'success');
-      }
     } else {
       showMessage(result.error || 'Unable to send OTP', 'error');
     }

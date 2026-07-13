@@ -105,6 +105,18 @@ button, input, select, textarea { font: inherit; }
 .login-help {
   margin-top: 10px;
 }
+.show-password-row {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.show-password-row input {
+  width: auto !important;
+  min-height: unset;
+}
 .message.success { color: #166534; }
 .message.error { color: #b91c1c; }
 

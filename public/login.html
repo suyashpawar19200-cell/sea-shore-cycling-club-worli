@@ -21,22 +21,23 @@
       <section class="section">
         <div class="card login-card">
           <h1>Admin & Manager access</h1>
-          <p class="muted">Create staff credentials with OTP first, then sign in with your password.</p>
+          <p class="muted">Use one shared page to register a new staff account or sign in with your password.</p>
 
           <div class="form-section">
-            <h3>Create staff credentials</h3>
-            <p class="muted">OTP will be sent to the phone number you enter via SMS. If SMS is not configured, the code will be shown here and logged on the server.</p>
+            <h3>Register new staff account</h3>
+            <p class="muted">Choose a role, request an OTP, then create a password to enroll for staff access.</p>
             <form id="staff-create-form">
-              <label>Phone<input name="phone" required /></label>
+              <label>Phone<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required /></label>
               <label>Role<select name="role" required>
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
               </select></label>
-              <label>New password<input name="password" type="password" required /></label>
+              <label>New password<input id="register-password" name="password" type="password" autocomplete="new-password" required /></label>
+              <label class="show-password-row"><input type="checkbox" data-password-target="register-password" /> Show password</label>
               <label>OTP code<input name="otp" autocomplete="one-time-code" required /></label>
               <div class="card-footer" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start;">
                 <button class="btn btn-secondary" type="button" id="send-otp-btn" style="display: inline-block; visibility: visible; background: var(--primary); color: white; border: 1px solid var(--primary);">Send OTP</button>
-                <button class="btn btn-primary" type="submit">Create credentials</button>
+                <button class="btn btn-primary" type="submit">Register</button>
               </div>
             </form>
           </div>
@@ -44,18 +45,20 @@
           <div class="form-section">
             <h3>Admin login</h3>
             <form id="admin-login-form">
-              <label>Phone<input name="phone" required /></label>
-              <label>Password<input name="password" type="password" required /></label>
+              <label>Phone<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required /></label>
+              <label>Password<input id="admin-login-password" name="password" type="password" autocomplete="current-password" required /></label>
+              <label class="show-password-row"><input type="checkbox" data-password-target="admin-login-password" /> Show password</label>
               <button class="btn btn-primary" type="submit">Sign in as admin</button>
             </form>
           </div>
 
           <div class="form-section">
             <h3>Manager login</h3>
-            <p class="muted">Use the phone number and password you created above to sign in as manager.</p>
+            <p class="muted">Use the phone number and password created during registration to sign in as manager.</p>
             <form id="manager-login-form">
-              <label>Phone<input name="phone" required /></label>
-              <label>Password<input name="password" type="password" required /></label>
+              <label>Phone<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required /></label>
+              <label>Password<input id="manager-login-password" name="password" type="password" autocomplete="current-password" required /></label>
+              <label class="show-password-row"><input type="checkbox" data-password-target="manager-login-password" /> Show password</label>
               <button class="btn btn-secondary" type="submit" style="display: inline-block; visibility: visible; background: var(--primary); color: white; border: 1px solid var(--primary);">Sign in as manager</button>
             </form>
           </div>
@@ -72,6 +75,15 @@
       const createForm = document.getElementById('staff-create-form');
       const sendOtpButton = document.getElementById('send-otp-btn');
       const message = document.getElementById('login-message');
+      const passwordToggles = document.querySelectorAll('[data-password-target]');
+
+      passwordToggles.forEach((toggle) => {
+        toggle.addEventListener('change', () => {
+          const target = document.getElementById(toggle.dataset.passwordTarget);
+          if (!target) return;
+          target.type = toggle.checked ? 'text' : 'password';
+        });
+      });
 
       function showMessage(text, isError = false) {
         message.textContent = text;
@@ -108,10 +120,10 @@
           body: JSON.stringify({ phone: payload.phone, role: payload.role })
         });
         const result = await response.json();
-        if (result.otp) {
-          showMessage(`${result.message} OTP: ${result.otp}`);
+        if (result.success) {
+          showMessage(result.message || 'OTP sent.');
         } else {
-          showMessage(result.message || 'OTP request complete.');
+          showMessage(result.error || 'Unable to request OTP.', true);
         }
       }
 
@@ -119,20 +131,22 @@
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(createForm).entries());
         if (!payload.phone || !payload.role || !payload.password || !payload.otp) {
-          showMessage('Enter phone, role, password, and OTP to create credentials.', true);
+          showMessage('Enter phone, role, password, and OTP to register a new staff account.', true);
           return;
         }
-        const response = await fetch('/api/verify-otp', {
+
+        const response = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload, role: payload.role })
         });
         const result = await response.json();
         if (result.success) {
-          showMessage(result.message || 'Credentials created successfully.');
-          createForm.reset();
+          localStorage.setItem('cycleride-token', result.token);
+          showMessage(result.message || 'Registration successful.');
+          window.location.href = payload.role === 'admin' ? '/admin' : '/manager';
         } else {
-          showMessage(result.error || 'Unable to create credentials.', true);
+          showMessage(result.error || 'Unable to register account.', true);
         }
       });
 

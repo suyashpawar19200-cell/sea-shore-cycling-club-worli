@@ -1,11 +1,5 @@
 [
   {
-    "token": "mqz6vmjwe35a80bp",
-    "phone": "9082145455",
-    "role": "admin",
-    "expires": 1782822220268
-  },
-  {
     "token": "mqz6x7lhik9ayvu7",
     "phone": "9082145455",
     "role": "manager",
@@ -16,5 +10,11 @@
     "phone": "123456789",
     "role": "manager",
     "expires": 1783432223682
+  },
+  {
+    "token": "mrizroyve5s2b6j4",
+    "phone": "9082145455",
+    "role": "admin",
+    "expires": 1784019602983
   }
 ]
