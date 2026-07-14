@@ -6,8 +6,8 @@ const PRODUCTS = [
     name: 'Sea Shore Cycling Club Rental',
     price: 250,
     category: 'Rental',
-    description: 'Premium beachside bike hire with helmet, lock, and route guidance.',
-    badge: 'Hourly Rental',
+    description: 'Premium beachside bike hire with helmet, lock, and route guidance. ₹250 for the first 2 hours.',
+    badge: '₹250 / 2 hrs',
     deposit: 500
   }
 ];
@@ -91,6 +91,10 @@ function getCartSubtotal() {
   return getCart().reduce((total, item) => total + item.price * item.quantity, 0);
 }
 
+function calculateRentalCharge(subtotal, duration) {
+  return 250;
+}
+
 function updateCartCount() {
   const count = getCartCount();
   document.querySelectorAll('[data-cart-count]').forEach((el) => {
@@ -125,6 +129,7 @@ window.CycleRide = {
   clearCart,
   getCartCount,
   getCartSubtotal,
+  calculateRentalCharge,
   updateCartCount,
   attachAddToCartButtons
 };

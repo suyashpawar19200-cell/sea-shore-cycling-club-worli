@@ -1,20 +1,40 @@
-const {
-  formatCurrency: formatCurrencyFn,
-  getCart: getCartItems,
-  saveCart: saveCartItems,
-  getCartSubtotal: getCartSubtotalFn,
-  updateCartCount: updateCartCountFn
-} = window.CycleRide;
+const rideApi = window.CycleRide || {};
+let formatCurrencyFn = typeof rideApi.formatCurrency === 'function'
+  ? rideApi.formatCurrency
+  : (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+let getCartItems = typeof rideApi.getCart === 'function' ? rideApi.getCart : () => getCartSnapshot();
+let saveCartItems = typeof rideApi.saveCart === 'function' ? rideApi.saveCart : (cart) => localStorage.setItem('seashore-cart', JSON.stringify(cart));
+let getCartSubtotalFn = typeof rideApi.getCartSubtotal === 'function' ? rideApi.getCartSubtotal : () => getCartSubtotalSnapshot();
+let calculateRentalCharge = typeof rideApi.calculateRentalCharge === 'function' ? rideApi.calculateRentalCharge : (subtotal, duration) => {
+  const normalizedDuration = Math.max(1, parseInt(duration, 10) || 1);
+  const baseCharge = 250;
+  const extraHours = Math.max(0, normalizedDuration - 2);
+  return 250;
+};
+let updateCartCountFn = typeof rideApi.updateCartCount === 'function' ? rideApi.updateCartCount : () => {};
+
+function getCartSnapshot() {
+  try {
+    const stored = localStorage.getItem('seashore-cart');
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function getCartSubtotalSnapshot() {
+  return getCartSnapshot().reduce((total, item) => total + (item.price || 0) * (item.quantity || 0), 0);
+}
 
 const DEPOSIT_AMOUNT = 500;
-const BOOKING_DRAFT_STORAGE_KEY = 'cycleride-booking-draft';
+const BOOKING_DRAFT_STORAGE_KEY = 'cycle-ride-booking-draft';
 
 let bookingDraft = {};
 let billingPageInitialized = false;
 
 function populateBillingSummary() {
-  const cartItems = getCartItems();
-  const subtotal = getCartSubtotalFn();
+  const cartItems = (typeof getCartItems === 'function' ? getCartItems() : getCartSnapshot()) || [];
+  const subtotal = (typeof getCartSubtotalFn === 'function' ? getCartSubtotalFn() : getCartSubtotalSnapshot()) || 0;
   const itemsContainer = document.getElementById('billing-items');
   const durationInput = document.querySelector('input[name="duration"]');
   const rentalDuration = parseInt(durationInput?.value || bookingDraft.duration || 1, 10);
@@ -22,7 +42,7 @@ function populateBillingSummary() {
   if (!itemsContainer) return;
 
   const baseRentalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const rentalAmount = baseRentalAmount * rentalDuration;
+  const rentalAmount = calculateRentalCharge(baseRentalAmount, rentalDuration);
   const total = rentalAmount + DEPOSIT_AMOUNT;
 
   itemsContainer.innerHTML = cartItems.length > 0
@@ -78,12 +98,16 @@ function showStep(stepNumber) {
 }
 
 function renderBookingSummary() {
-  document.getElementById('summary-name').textContent = bookingDraft.customerName || '-';
-  document.getElementById('summary-phone').textContent = bookingDraft.phone || '-';
-  document.getElementById('summary-datetime').textContent = bookingDraft.rentalDate && bookingDraft.rentalTime
+  const summaryName = document.getElementById('summary-name');
+  const summaryPhone = document.getElementById('summary-phone');
+  const summaryDatetime = document.getElementById('summary-datetime');
+  const summaryPickup = document.getElementById('summary-pickup');
+  if (summaryName) summaryName.textContent = bookingDraft.customerName || '-';
+  if (summaryPhone) summaryPhone.textContent = bookingDraft.phone || '-';
+  if (summaryDatetime) summaryDatetime.textContent = bookingDraft.rentalDate && bookingDraft.rentalTime
     ? `${bookingDraft.rentalDate} at ${bookingDraft.rentalTime}`
     : '-';
-  document.getElementById('summary-pickup').textContent = bookingDraft.pickupLocation || '-';
+  if (summaryPickup) summaryPickup.textContent = bookingDraft.pickupLocation || '-';
 }
 
 function saveDraft() {
@@ -116,6 +140,7 @@ function initializeBillingPage() {
 
   updateCartCountFn();
   populateBillingSummary();
+  renderBookingSummary();
   restoreDraft();
   renderBookingSummary();
   showStep(1);
@@ -125,11 +150,12 @@ function initializeBillingPage() {
   if (infoForm) {
     infoForm.addEventListener('input', syncBookingDraftFromForm);
     infoForm.addEventListener('change', syncBookingDraftFromForm);
-    infoForm.addEventListener('submit', (event) => {
+    infoForm.onsubmit = (event) => {
       event.preventDefault();
       syncBookingDraftFromForm();
+      renderBookingSummary();
       showStep(2);
-    });
+    };
   }
 
   const paymentMethodSelect = document.getElementById('payment-method');
@@ -144,10 +170,27 @@ function initializeBillingPage() {
     backButton.addEventListener('click', () => showStep(1));
   }
 
+  const summaryStep = document.getElementById('step-payment');
+  if (summaryStep) {
+    summaryStep.addEventListener('click', (event) => {
+      if (event.target.id === 'confirm-payment') {
+        const paymentMethod = document.getElementById('payment-method')?.value;
+        if (!paymentMethod) {
+          const messageBox = document.getElementById('billing-message');
+          if (messageBox) {
+            messageBox.textContent = 'Please choose a payment method.';
+            messageBox.style.color = 'red';
+          }
+          return;
+        }
+      }
+    });
+  }
+
   const confirmButton = document.getElementById('confirm-payment');
   if (confirmButton) {
     confirmButton.addEventListener('click', async () => {
-      const cartItems = getCartItems();
+      const cartItems = (typeof getCartItems === 'function' ? getCartItems() : getCartSnapshot()) || [];
       const messageBox = document.getElementById('billing-message');
 
       if (cartItems.length === 0) {
@@ -164,8 +207,9 @@ function initializeBillingPage() {
       }
 
       const rentalDuration = parseInt(bookingDraft.duration || 1, 10);
-      const subtotal = getCartSubtotalFn();
-      const rentalAmount = subtotal * rentalDuration;
+      const subtotal = (typeof getCartSubtotalFn === 'function' ? getCartSubtotalFn() : getCartSubtotalSnapshot()) || 0;
+      const rentalAmount = calculateRentalCharge(subtotal, rentalDuration);
+      populateBillingSummary();
       const payload = {
         ...bookingDraft,
         paymentMethod,
@@ -198,8 +242,8 @@ function initializeBillingPage() {
         document.getElementById('confirm-status').textContent = result.status || 'Confirmed';
         document.getElementById('confirm-total').textContent = formatCurrencyFn(result.total || payload.total || 0);
 
-        saveCartItems([]);
-        updateCartCountFn();
+        if (typeof saveCartItems === 'function') saveCartItems([]);
+        if (typeof updateCartCountFn === 'function') updateCartCountFn();
         messageBox.textContent = result.message;
         showStep(3);
       } catch (error) {
@@ -220,10 +264,20 @@ function initializeBillingPage() {
   window.addEventListener('load', populateBillingSummary);
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeBillingPage);
-} else {
-  initializeBillingPage();
+window.initializeBillingPage = initializeBillingPage;
+window.populateBillingSummary = populateBillingSummary;
+window.renderBookingSummary = renderBookingSummary;
+
+function bootBillingPage() {
+  if (typeof window.initializeBillingPage === 'function') {
+    window.initializeBillingPage();
+  }
 }
 
-window.addEventListener('load', initializeBillingPage);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootBillingPage);
+} else {
+  bootBillingPage();
+}
+
+window.addEventListener('load', bootBillingPage);

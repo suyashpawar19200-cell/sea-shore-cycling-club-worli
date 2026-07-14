@@ -118,8 +118,8 @@
       </section>
     </main>
 
-    <script src="/js/app.js?v=20260706"></script>
-    <script src="/js/billing.js?v=20260706"></script>
+    <script src="/js/app.js?v=20260714b"></script>
+    <script src="/js/billing.js?v=20260714b"></script>
     <script>
       const paymentMethodInput = document.getElementById('payment-method');
       const upiQr = document.getElementById('upi-qr');
@@ -152,6 +152,143 @@
         }
       });
 
+      function getCartSnapshot() {
+        try {
+          const stored = localStorage.getItem('seashore-cart');
+          return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function getCartSubtotalSnapshot() {
+        return getCartSnapshot().reduce((total, item) => total + (item.price || 0) * (item.quantity || 0), 0);
+      }
+
+      function populateBillingSummary() {
+        const cartItems = getCartSnapshot();
+        const subtotal = getCartSubtotalSnapshot();
+        const itemsContainer = document.getElementById('billing-items');
+        const durationInput = document.querySelector('input[name="duration"]');
+        const rentalDuration = parseInt(durationInput?.value || 1, 10);
+        const baseRentalAmount = cartItems.reduce((total, item) => total + (item.price || 0) * (item.quantity || 0), 0);
+        const rentalAmount = 250;
+        const total = rentalAmount + 500;
+        if (!itemsContainer) return;
+
+        itemsContainer.innerHTML = cartItems.length > 0
+          ? cartItems.map((item) => `
+              <li class="billing-item">
+                <span>${item.name} × ${item.quantity}</span>
+                <strong>₹${(item.price || 0) * (item.quantity || 0)}</strong>
+              </li>
+            `).join('')
+          : '<li class="empty-state">No rental items selected</li>';
+
+        document.getElementById('subtotal-amount').textContent = `₹${subtotal}`;
+        document.getElementById('rental-amount').textContent = `₹${rentalAmount}`;
+        document.getElementById('deposit-amount').textContent = '₹500';
+        document.getElementById('total-amount').textContent = `₹${total}`;
+      }
+
+      function renderBookingSummary() {
+        const bookingDraft = JSON.parse(localStorage.getItem('cycle-ride-booking-draft') || '{}');
+        document.getElementById('summary-name').textContent = bookingDraft.customerName || '-';
+        document.getElementById('summary-phone').textContent = bookingDraft.phone || '-';
+        document.getElementById('summary-datetime').textContent = bookingDraft.rentalDate && bookingDraft.rentalTime
+          ? `${bookingDraft.rentalDate} at ${bookingDraft.rentalTime}`
+          : '-';
+        document.getElementById('summary-pickup').textContent = bookingDraft.pickupLocation || '-';
+      }
+
+      function showStep(stepNumber) {
+        document.querySelectorAll('.booking-step').forEach((step) => step.classList.add('hidden'));
+        document.querySelectorAll('[data-step-pill]').forEach((pill) => {
+          pill.classList.toggle('active', Number(pill.dataset.stepPill) === stepNumber);
+        });
+        const stepId = stepNumber === 1 ? 'step-info' : stepNumber === 2 ? 'step-payment' : 'step-billing';
+        document.getElementById(stepId)?.classList.remove('hidden');
+      }
+
+      function syncBookingDraftFromForm() {
+        const infoForm = document.getElementById('booking-info-form');
+        if (!infoForm) return;
+        const formData = new FormData(infoForm);
+        const bookingDraft = Object.fromEntries(formData.entries());
+        bookingDraft.duration = parseInt(bookingDraft.duration || 1, 10);
+        localStorage.setItem('cycle-ride-booking-draft', JSON.stringify(bookingDraft));
+        renderBookingSummary();
+        populateBillingSummary();
+      }
+
+      document.getElementById('booking-info-form')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        syncBookingDraftFromForm();
+        showStep(2);
+      });
+
+      document.getElementById('booking-info-form')?.addEventListener('input', syncBookingDraftFromForm);
+      document.getElementById('booking-info-form')?.addEventListener('change', syncBookingDraftFromForm);
+
+      document.getElementById('back-to-info')?.addEventListener('click', () => showStep(1));
+
+      document.getElementById('confirm-payment')?.addEventListener('click', async () => {
+        const cartItems = getCartSnapshot();
+        const messageBox = document.getElementById('billing-message');
+        if (cartItems.length === 0) {
+          messageBox.textContent = 'Please add items to your cart before booking.';
+          messageBox.style.color = 'red';
+          return;
+        }
+        const paymentMethod = document.getElementById('payment-method')?.value;
+        if (!paymentMethod) {
+          messageBox.textContent = 'Please choose a payment method.';
+          messageBox.style.color = 'red';
+          return;
+        }
+        const bookingDraft = JSON.parse(localStorage.getItem('cycle-ride-booking-draft') || '{}');
+        const rentalDuration = parseInt(bookingDraft.duration || 1, 10);
+        const subtotal = getCartSubtotalSnapshot();
+        const rentalAmount = 250;
+        const payload = {
+          ...bookingDraft,
+          paymentMethod,
+          items: cartItems,
+          subtotal,
+          rentalAmount,
+          deposit: 500,
+          tax: 0,
+          total: rentalAmount + 500
+        };
+        messageBox.textContent = 'Processing your booking...';
+        messageBox.style.color = '';
+        try {
+          const response = await fetch('/api/billing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Booking failed');
+          document.getElementById('confirm-invoice').textContent = result.invoiceNumber;
+          document.getElementById('confirm-booking-id').textContent = result.orderId;
+          document.getElementById('confirm-name').textContent = payload.customerName;
+          document.getElementById('confirm-datetime').textContent = `${payload.rentalDate} at ${payload.rentalTime}`;
+          document.getElementById('confirm-payment-method').textContent = paymentMethod.toUpperCase();
+          document.getElementById('confirm-status').textContent = result.status || 'Confirmed';
+          document.getElementById('confirm-total').textContent = `₹${result.total || payload.total || 0}`;
+          localStorage.setItem('seashore-cart', '[]');
+          messageBox.textContent = result.message;
+          showStep(3);
+        } catch (error) {
+          messageBox.textContent = `Error: ${error.message}`;
+          messageBox.style.color = 'red';
+        }
+      });
+
+      populateBillingSummary();
+      renderBookingSummary();
+      showStep(1);
     </script>
   </body>
 </html>

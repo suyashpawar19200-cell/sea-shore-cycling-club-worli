@@ -3,11 +3,11 @@ const {
   getCart: getCartItems,
   saveCart: saveCartItems,
   getCartSubtotal: getCartSubtotalFn,
+  calculateRentalCharge,
   updateCartCount: updateCartCountFn
-} = window.CycleRide;
+} = window.CycleRide || {};
 
 const DEPOSIT_AMOUNT = 500;
-const RENTAL_PER_CYCLE = 250;
 
 function populateCheckout() {
   const cartItems = getCartItems();
@@ -17,8 +17,10 @@ function populateCheckout() {
 
   if (cartItems.length === 0) {
     list.innerHTML = '<li class="empty-state">Choose a rental before booking your ride.</li>';
-    document.getElementById('checkout-total').textContent = formatCurrencyFn(0);
-    document.querySelector('form').classList.add('disabled');
+    const checkoutTotal = document.getElementById('checkout-total');
+    if (checkoutTotal) checkoutTotal.textContent = formatCurrencyFn(0);
+    const form = document.querySelector('form');
+    if (form) form.classList.add('disabled');
     return;
   }
 
@@ -30,7 +32,7 @@ function populateCheckout() {
   `).join('');
 
   const rentalDuration = parseInt(document.querySelector('input[name="duration"]')?.value || 1, 10);
-  const rentalAmount = subtotal * rentalDuration;
+  const rentalAmount = calculateRentalCharge(subtotal, rentalDuration);
   const totalWithDeposit = rentalAmount + DEPOSIT_AMOUNT;
   
   document.getElementById('checkout-total').textContent = formatCurrencyFn(totalWithDeposit);
@@ -57,7 +59,7 @@ function initializeCheckoutPage() {
     
     payload.items = cartItems;
     payload.subtotal = getCartSubtotalFn();
-    payload.rentalAmount = payload.subtotal * rentalHours;
+    payload.rentalAmount = calculateRentalCharge(payload.subtotal, rentalHours);
     payload.deposit = DEPOSIT_AMOUNT;
     payload.total = payload.rentalAmount + DEPOSIT_AMOUNT;
     payload.subscriptionCost = 0;
@@ -81,12 +83,13 @@ function initializeCheckoutPage() {
       const invoiceCustomer = document.getElementById('invoice-customer');
       const invoiceTotal = document.getElementById('invoice-total');
       const customerName = payload.customerName || 'Guest';
-      invoiceNumber.textContent = `Invoice: ${result.invoiceNumber}`;
-      invoicePayment.textContent = `Payment type: ${result.paymentMethod}`;
-      invoiceCustomer.textContent = `Customer: ${customerName}`;
-      invoiceTotal.textContent = `Total paid: ${formatCurrencyFn(payload.total)}`;
-      invoiceCard.classList.remove('hidden');
-      document.getElementById('order-message').textContent = `${result.message} Booking ID: ${result.orderId}`;
+      if (invoiceNumber) invoiceNumber.textContent = `Invoice: ${result.invoiceNumber}`;
+      if (invoicePayment) invoicePayment.textContent = `Payment type: ${result.paymentMethod}`;
+      if (invoiceCustomer) invoiceCustomer.textContent = `Customer: ${customerName}`;
+      if (invoiceTotal) invoiceTotal.textContent = `Total paid: ${formatCurrencyFn(payload.total)}`;
+      if (invoiceCard) invoiceCard.classList.remove('hidden');
+      const orderMessage = document.getElementById('order-message');
+      if (orderMessage) orderMessage.textContent = `${result.message} Booking ID: ${result.orderId}`;
       form.reset();
       populateCheckout();
     } catch (error) {

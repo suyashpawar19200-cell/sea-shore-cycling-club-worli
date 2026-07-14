@@ -27,6 +27,7 @@
             <h3>Register new staff account</h3>
             <p class="muted">Choose a role, request an OTP, then create a password to enroll for staff access.</p>
             <form id="staff-create-form">
+              <label>Name<input name="name" type="text" autocomplete="name" required /></label>
               <label>Phone<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required /></label>
               <label>Role<select name="role" required>
                 <option value="admin">Admin</option>
@@ -130,8 +131,8 @@
       createForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(createForm).entries());
-        if (!payload.phone || !payload.role || !payload.password || !payload.otp) {
-          showMessage('Enter phone, role, password, and OTP to register a new staff account.', true);
+        if (!payload.name || !payload.phone || !payload.role || !payload.password || !payload.otp) {
+          showMessage('Enter name, phone, role, password, and OTP to register a new staff account.', true);
           return;
         }
 

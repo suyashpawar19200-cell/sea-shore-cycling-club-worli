@@ -1,220 +1,14 @@
 [
   {
-    "id": "BK-1781623637818",
-    "billId": "BILL-1781623637818",
-    "customerName": "jhgjg",
-    "phone": ",jyg,h",
-    "rentalDate": "2026-06-11",
-    "rentalTime": "12:11",
-    "duration": 2,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "subscriptionPlan": "one-time",
-    "subscriptionCost": 0,
-    "items": [
-      {
-        "name": "Standard Bike Rental",
-        "price": 65,
-        "quantity": 1
-      }
-    ],
-    "subtotal": 250,
-    "tax": 0,
-    "deposit": 100,
-    "total": 350,
-    "date": "16/6/2026, 8:57:17 pm",
-    "status": "confirmed"
-  },
-  {
-    "id": "BK-1781866204378",
-    "billId": "BILL-1781866204378",
-    "customerName": "as",
-    "phone": "asd",
-    "rentalDate": "2026-06-13",
-    "rentalTime": "21:22",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "subscriptionPlan": "one-time",
-    "subscriptionCost": 0,
-    "items": [
-      {
-        "name": "29-inch Unisex Cycle",
-        "price": 70,
-        "quantity": 2
-      }
-    ],
-    "subtotal": 300,
-    "tax": 0,
-    "deposit": 100,
-    "total": 400,
-    "date": "19/6/2026, 4:20:04 pm",
-    "status": "confirmed"
-  },
-  {
-    "id": "BK-1782735793110",
-    "billId": "BILL-1782735793110",
-    "customerName": "jhgjg",
-    "phone": ",jyg,h",
-    "rentalDate": "2026-06-11",
-    "rentalTime": "20:52",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "subscriptionPlan": "one-time",
-    "subscriptionCost": 0,
-    "items": [
-      {
-        "name": "Biking Ride Package",
-        "price": 65,
-        "quantity": 1
-      }
-    ],
-    "subtotal": 150,
-    "tax": 0,
-    "deposit": 100,
-    "total": 250,
-    "date": "29/6/2026, 5:53:13 pm",
-    "status": "confirmed"
-  },
-  {
-    "id": "BK-1783348581523",
-    "billId": "BILL-1783348581523",
-    "invoiceNumber": "INV-581523",
-    "customerName": "jhgjg",
-    "phone": "123456789",
-    "rentalDate": "2026-07-24",
-    "rentalTime": "00:00",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "subscriptionPlan": "one-time",
-    "subscriptionCost": 0,
-    "items": [
-      {
-        "id": "sea-shore-rental",
-        "name": "Sea Shore Cycling Club Rental",
-        "price": 250,
-        "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
-        "deposit": 500,
-        "quantity": 3
-      }
-    ],
-    "subtotal": 750,
-    "tax": 0,
-    "deposit": 500,
-    "total": 1250,
-    "date": "6/7/2026, 8:06:21 pm",
-    "status": "cash pending"
-  },
-  {
-    "id": "BK-1783348614907",
-    "billId": "BILL-1783348614907",
-    "invoiceNumber": "INV-614907",
-    "customerName": "jhgjg",
-    "phone": ",jyg,h",
-    "email": "suyash@gmail.com",
-    "rentalDate": "2026-07-18",
-    "rentalTime": "00:06",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "items": [
-      {
-        "id": "sea-shore-rental",
-        "name": "Sea Shore Cycling Club Rental",
-        "price": 250,
-        "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
-        "deposit": 500,
-        "quantity": 3
-      }
-    ],
-    "subtotal": 750,
-    "rentalAmount": 750,
-    "tax": 0,
-    "deposit": 500,
-    "total": 1250,
-    "date": "6/7/2026, 8:06:54 pm",
-    "status": "cash pending"
-  },
-  {
-    "id": "BK-1783348683280",
-    "billId": "BILL-1783348683280",
-    "invoiceNumber": "INV-683280",
-    "customerName": "jhgjg",
-    "phone": "1134567890",
-    "rentalDate": "2026-07-24",
-    "rentalTime": "00:07",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "subscriptionPlan": "one-time",
-    "subscriptionCost": 0,
-    "items": [
-      {
-        "id": "sea-shore-rental",
-        "name": "Sea Shore Cycling Club Rental",
-        "price": 250,
-        "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
-        "deposit": 500,
-        "quantity": 1
-      }
-    ],
-    "subtotal": 250,
-    "tax": 0,
-    "deposit": 500,
-    "total": 750,
-    "date": "6/7/2026, 8:08:03 pm",
-    "status": "cash pending"
-  },
-  {
-    "id": "BK-1783348717105",
-    "billId": "BILL-1783348717105",
-    "invoiceNumber": "INV-717105",
-    "customerName": "jhgjg",
-    "phone": ",jyg,h",
-    "email": "suyash@gmail.com",
-    "rentalDate": "2026-07-18",
-    "rentalTime": "00:00",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "items": [
-      {
-        "id": "sea-shore-rental",
-        "name": "Sea Shore Cycling Club Rental",
-        "price": 250,
-        "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
-        "deposit": 500,
-        "quantity": 1
-      }
-    ],
-    "subtotal": 250,
-    "rentalAmount": 250,
-    "tax": 0,
-    "deposit": 500,
-    "total": 750,
-    "date": "6/7/2026, 8:08:37 pm",
-    "status": "cash pending"
-  },
-  {
-    "id": "BK-1783350592911",
-    "billId": "BILL-1783350592911",
-    "invoiceNumber": "INV-592911",
-    "customerName": "Asha Kumar",
+    "id": "BK-1784024391614",
+    "billId": "BILL-1784024391614",
+    "invoiceNumber": "INV-391614",
+    "customerName": "Test User",
     "phone": "9876543210",
-    "email": "asha@example.com",
-    "rentalDate": "2026-07-08",
-    "rentalTime": "15:30",
-    "duration": 2,
+    "email": "test@example.com",
+    "rentalDate": "2026-07-20",
+    "rentalTime": "14:00",
+    "duration": 3,
     "pickupLocation": "Worli Promenade",
     "paymentMethod": "upi",
     "items": [
@@ -222,92 +16,61 @@
         "id": "sea-shore-rental",
         "name": "Sea Shore Cycling Club Rental",
         "price": 250,
-        "quantity": 1,
-        "description": "Premium beachside bike hire"
+        "category": "Rental",
+        "description": "Premium beachside bike hire with helmet, lock, and route guidance. ₹250 for first 2 hours, then ₹75 per extra hour.",
+        "badge": "₹250 / 2 hrs",
+        "deposit": 500,
+        "quantity": 1
       }
     ],
     "subtotal": 250,
-    "rentalAmount": 500,
+    "rentalAmount": 325,
     "tax": 0,
     "deposit": 500,
-    "total": 1000,
-    "date": "6/7/2026, 8:39:52 pm",
-    "status": "confirmed",
+    "total": 825,
+    "date": "14/7/2026, 3:49:51 pm",
+    "status": "pending",
+    "paymentStatus": "pending"
+  },
+  {
+    "id": "BK-1784024607793",
+    "billId": "BILL-1784024607793",
+    "invoiceNumber": "INV-607793",
+    "customerName": "Test User",
+    "phone": "9876543210",
+    "email": "test@example.com",
+    "rentalDate": "2026-07-20",
+    "rentalTime": "14:00",
+    "duration": 3,
+    "pickupLocation": "Worli Promenade",
+    "paymentMethod": "cash",
+    "items": [
+      {
+        "id": "sea-shore-rental",
+        "name": "Sea Shore Cycling Club Rental",
+        "price": 250,
+        "quantity": 1,
+        "description": "Premium beachside bike hire with helmet, lock, and route guidance."
+      }
+    ],
+    "subtotal": 250,
+    "rentalAmount": 325,
+    "tax": 0,
+    "deposit": 500,
+    "total": 825,
+    "date": "14/7/2026, 3:53:27 pm",
+    "status": "pending",
     "paymentStatus": "paid"
   },
   {
-    "id": "BK-1783499329978",
-    "billId": "BILL-1783499329978",
-    "invoiceNumber": "INV-329978",
-    "customerName": "asd",
-    "phone": "1234567890",
-    "email": "suyash@gmail.con",
-    "rentalDate": "2026-07-23",
-    "rentalTime": "15:00",
-    "duration": 2,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "cash",
-    "items": [
-      {
-        "id": "sea-shore-rental",
-        "name": "Sea Shore Cycling Club Rental",
-        "price": 250,
-        "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
-        "deposit": 500,
-        "quantity": 3
-      }
-    ],
-    "subtotal": 750,
-    "rentalAmount": 1500,
-    "tax": 0,
-    "deposit": 500,
-    "total": 2000,
-    "date": "8/7/2026, 1:58:49 pm",
-    "status": "cash pending"
-  },
-  {
-    "id": "BK-1783515578973",
-    "billId": "BILL-1783515578973",
-    "invoiceNumber": "INV-578973",
-    "customerName": "z",
-    "phone": "1234567789",
-    "email": "",
-    "rentalDate": "2026-07-09",
-    "rentalTime": "20:31",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "upi",
-    "items": [
-      {
-        "id": "sea-shore-rental",
-        "name": "Sea Shore Cycling Club Rental",
-        "price": 250,
-        "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
-        "deposit": 500,
-        "quantity": 1
-      }
-    ],
-    "subtotal": 250,
-    "rentalAmount": 250,
-    "tax": 0,
-    "deposit": 500,
-    "total": 750,
-    "date": "8/7/2026, 6:29:38 pm",
-    "status": "paid"
-  },
-  {
-    "id": "BK-1783516003289",
-    "billId": "BILL-1783516003289",
-    "invoiceNumber": "INV-003289",
-    "customerName": "z",
-    "phone": "1234567789",
-    "email": "",
-    "rentalDate": "2026-07-09",
-    "rentalTime": "20:31",
+    "id": "BK-1784024867694",
+    "billId": "BILL-1784024867694",
+    "invoiceNumber": "INV-867694",
+    "customerName": "dv",
+    "phone": "xzcv",
+    "email": "zxc@gmail.com",
+    "rentalDate": "2026-07-17",
+    "rentalTime": "20:00",
     "duration": 1,
     "pickupLocation": "Worli Promenade, Mumbai",
     "paymentMethod": "cash",
@@ -317,8 +80,8 @@
         "name": "Sea Shore Cycling Club Rental",
         "price": 250,
         "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
+        "description": "Premium beachside bike hire with helmet, lock, and route guidance. ₹250 for the first 2 hours.",
+        "badge": "₹250 / 2 hrs",
         "deposit": 500,
         "quantity": 1
       }
@@ -328,39 +91,8 @@
     "tax": 0,
     "deposit": 500,
     "total": 750,
-    "date": "8/7/2026, 6:36:43 pm",
-    "status": "cash pending"
-  },
-  {
-    "id": "BK-1783516162806",
-    "billId": "BILL-1783516162806",
-    "invoiceNumber": "INV-162806",
-    "customerName": "z",
-    "phone": "1234567789",
-    "email": "",
-    "rentalDate": "2026-07-09",
-    "rentalTime": "20:31",
-    "duration": 1,
-    "pickupLocation": "Worli Promenade, Mumbai",
-    "paymentMethod": "upi",
-    "items": [
-      {
-        "id": "sea-shore-rental",
-        "name": "Sea Shore Cycling Club Rental",
-        "price": 250,
-        "category": "Rental",
-        "description": "Premium beachside bike hire with helmet, lock, and route guidance.",
-        "badge": "Hourly Rental",
-        "deposit": 500,
-        "quantity": 2
-      }
-    ],
-    "subtotal": 500,
-    "rentalAmount": 500,
-    "tax": 0,
-    "deposit": 500,
-    "total": 1000,
-    "date": "8/7/2026, 6:39:22 pm",
-    "status": "paid"
+    "date": "14/7/2026, 3:57:47 pm",
+    "status": "pending",
+    "paymentStatus": "paid"
   }
 ]

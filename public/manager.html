@@ -19,6 +19,7 @@
       .status-paid { background: #d4edda; color: #155724; }
       .status-pending { background: #fff3cd; color: #856404; }
       .status-confirmed { background: #d1ecf1; color: #0c5460; }
+      .status-accepted { background: #e6f4ea; color: #1f5d3a; }
       .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
       .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; }
       .stat-value { font-size: 28px; font-weight: bold; color: #28a745; }
@@ -39,7 +40,8 @@
         
         <div class="manager-nav">
           <button class="nav-btn active" onclick="showSection(event, 'overview')">Overview</button>
-          <button class="nav-btn" onclick="showSection(event, 'billing')">Billing & Revenue</button>
+          <button class="nav-btn" onclick="showSection(event, 'billing')">Billing & Orders</button>
+          <button class="nav-btn" onclick="showSection(event, 'archive')">Archived Orders</button>
           <button class="nav-btn" onclick="showSection(event, 'fleet')">Fleet Management</button>
           <button class="nav-btn" onclick="showSection(event, 'team')">Team Members</button>
         </div>
@@ -53,10 +55,22 @@
 
         <!-- Billing & Revenue Section -->
         <div id="billing" class="section-content">
-          <h2>Billing & Revenue Reports</h2>
-          <div id="billing-filters" style="margin-bottom: 20px;">
+          <h2>Billing & Orders</h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button onclick="saveArchivedOrders()" style="padding:8px 14px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">Archive Daily Orders</button>
+              <button onclick="resetMonthlyData()" style="padding:8px 14px; background:#6f42c1; color:white; border:none; border-radius:4px; cursor:pointer;">Reset Monthly Data</button>
+            </div>
+            <button onclick="deleteArchivedOrders()" style="padding:8px 14px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; margin-left:auto;">Delete Archive</button>
+          </div>
+          <div id="billing-filters" style="margin-bottom: 20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
             <input type="text" id="search-billing" placeholder="Search by customer name or phone..." style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px;">
-            <button onclick="filterBilling()" style="padding: 8px 16px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Search</button>
+            <select id="billing-status-filter" onchange="filterBilling()" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              <option value="all">All Orders</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed / Accepted</option>
+            </select>
+            <button onclick="filterBilling()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Search</button>
           </div>
           <table class="billing-table" id="billing-table">
             <thead>
@@ -71,18 +85,37 @@
                 <th>Total (₹)</th>
                 <th>Payment Method</th>
                 <th>Status</th>
+                <th>Confirmed By</th>
               </tr>
             </thead>
             <tbody id="billing-body"></tbody>
           </table>
         </div>
 
+        <!-- Archived Orders Section -->
+        <div id="archive" class="section-content">
+          <h2>Archived Orders</h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+            <button onclick="loadArchivedOrdersView()" style="padding:8px 14px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">Show Archived Orders</button>
+            <button onclick="downloadArchivedOrders()" style="padding:8px 14px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">Download Archive</button>
+          </div>
+          <div id="archived-orders-list"></div>
+        </div>
+
         <!-- Fleet Management Section -->
         <div id="fleet" class="section-content">
           <h2>Fleet Management</h2>
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:12px;">
+              <label style="font-weight:600;">Fleet Size
+                <input id="fleet-size-input" type="number" min="0" style="display:block; margin-top:6px; padding:8px; width:140px; border:1px solid #ddd; border-radius:4px;">
+              </label>
+              <label style="font-weight:600;">Cycles in Maintenance
+                <input id="fleet-maintenance-input" type="number" min="0" style="display:block; margin-top:6px; padding:8px; width:160px; border:1px solid #ddd; border-radius:4px;">
+              </label>
+              <button onclick="saveFleetSettings()" style="padding:8px 14px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">Save</button>
+            </div>
             <p><strong>Cycles Available:</strong> <span id="cycles-available">Loading...</span></p>
-            <p><strong>Cycles in Maintenance:</strong> <span id="cycles-maintenance">Loading...</span></p>
             <p><strong>Average Rental Duration:</strong> <span id="avg-duration">Loading...</span></p>
             <p><strong>Daily Revenue Target:</strong> ₹0 (Track your performance)</p>
           </div>
@@ -109,6 +142,8 @@
         // Load data for the section
         if (sectionId === 'billing') {
           loadBilling();
+        } else if (sectionId === 'archive') {
+          loadArchivedOrdersView();
         } else if (sectionId === 'fleet') {
           loadFleet();
         } else if (sectionId === 'team') {
@@ -188,7 +223,7 @@
             <td>${bill.invoiceNumber || 'N/A'}</td>
             <td>${bill.customerName || 'N/A'}</td>
             <td>${bill.phone || 'N/A'}</td>
-            <td>${bill.rentalDate || 'N/A'}</td>
+            <td>${bill.rentalDate || 'N/A'}<br><small>${bill.rentalTime || 'N/A'}</small></td>
             <td>${Array.isArray(bill.items) ? bill.items.length : 0}</td>
             <td>₹${(bill.rentalAmount || 0).toFixed(2)}</td>
             <td>₹${(bill.deposit || 500).toFixed(2)}</td>
@@ -207,6 +242,7 @@
                 </div>
               </div>
             </td>
+            <td>${bill.confirmedByName ? `<strong>${bill.confirmedByName}</strong><br><small>${bill.confirmedByRole || ''}</small>` : '<span class="muted">Not confirmed yet</span>'}</td>
           </tr>
         `).join('');
       }
@@ -241,35 +277,132 @@
         }
       }
 
+      async function downloadArchivedOrders() {
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/orders/archived', { headers: { 'x-auth-token': token } });
+        if (!response.ok) return alert('Unable to download archived orders');
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'archived-orders.json';
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      async function loadArchivedOrdersView() {
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/orders/archived', { headers: { 'x-auth-token': token } });
+        const data = await response.json();
+        const list = document.getElementById('archived-orders-list');
+        const archives = Array.isArray(data) ? data : [];
+        list.innerHTML = archives.length > 0
+          ? archives.map(order => `<div class="card"><p><strong>${order.customerName || 'N/A'}</strong> - ${order.phone || 'N/A'}</p><p>Requested time: ${order.rentalDate || 'N/A'} ${order.rentalTime || ''}</p><p>Status: ${order.status || 'pending'}</p><p>Archived: ${order.archivedAt || 'N/A'}</p></div>`).join('')
+          : '<p>No archived orders found</p>';
+      }
+
+      async function saveArchivedOrders() {
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/orders/archive/save', { method: 'POST', headers: { 'x-auth-token': token } });
+        const result = await response.json();
+        alert(result.message || 'Archive saved');
+      }
+
+      async function deleteArchivedOrders() {
+        const confirmed = confirm('This will save the archive file and then clear the archived orders. Continue?');
+        if (!confirmed) return;
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/orders/archive/delete', { method: 'POST', headers: { 'x-auth-token': token } });
+        const result = await response.json();
+        alert(result.message || 'Archive deleted');
+        if (response.ok) loadArchivedOrdersView();
+      }
+
+      async function resetMonthlyData() {
+        const password = prompt('Enter your manager password to reset monthly data');
+        if (!password) return;
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/manager/reset-month', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+          body: JSON.stringify({ password })
+        });
+        const result = await response.json();
+        alert(result.message || 'Reset failed');
+        if (response.ok) loadData();
+      }
+
       function loadBilling() {
         displayBilling(window.allBilling || []);
       }
 
       function filterBilling() {
         const searchText = document.getElementById('search-billing').value.toLowerCase();
-        const filtered = (window.allBilling || []).filter(bill => 
-          (bill.customerName || '').toLowerCase().includes(searchText) ||
-          (bill.phone || '').toLowerCase().includes(searchText)
-        );
+        const statusFilter = document.getElementById('billing-status-filter')?.value || 'all';
+        const filtered = (window.allBilling || []).filter(bill => {
+          const customerMatch = (bill.customerName || '').toLowerCase().includes(searchText) || (bill.phone || '').toLowerCase().includes(searchText);
+          const status = (bill.status || 'pending').toLowerCase();
+          const statusMatch = statusFilter === 'all' || (statusFilter === 'pending' ? status === 'pending' : ['confirmed', 'accepted'].includes(status));
+          return customerMatch && statusMatch;
+        });
         displayBilling(filtered);
       }
 
+      function getFleetSettings() {
+        const storedSize = Number(localStorage.getItem('fleet-size') || 50);
+        const storedMaintenance = Number(localStorage.getItem('fleet-maintenance') || 2);
+        return {
+          size: Number.isFinite(storedSize) && storedSize >= 0 ? storedSize : 50,
+          maintenance: Number.isFinite(storedMaintenance) && storedMaintenance >= 0 ? storedMaintenance : 2
+        };
+      }
+
+      function saveFleetSettings() {
+        const size = Number(document.getElementById('fleet-size-input').value);
+        const maintenance = Number(document.getElementById('fleet-maintenance-input').value);
+        const safeSize = Number.isFinite(size) && size >= 0 ? size : 0;
+        const safeMaintenance = Number.isFinite(maintenance) && maintenance >= 0 ? maintenance : 0;
+
+        localStorage.setItem('fleet-size', safeSize);
+        localStorage.setItem('fleet-maintenance', safeMaintenance);
+        loadFleet();
+      }
+
       function loadFleet() {
-        // Calculate fleet stats from billing data
         const billing = window.allBilling || [];
         const totalCycles = billing.reduce((sum, b) => sum + (Array.isArray(b.items) ? b.items.length : 0), 0);
         const avgDuration = billing.length > 0 ? (billing.reduce((sum, b) => sum + (b.duration || 0), 0) / billing.length).toFixed(1) : '0';
-        
-        document.getElementById('cycles-available').textContent = Math.max(0, 50 - totalCycles);
-        document.getElementById('cycles-maintenance').textContent = '2';
+        const fleet = getFleetSettings();
+        const availableCycles = Math.max(0, fleet.size - totalCycles - fleet.maintenance);
+
+        document.getElementById('cycles-available').textContent = availableCycles;
+        document.getElementById('fleet-size-input').value = fleet.size;
+        document.getElementById('fleet-maintenance-input').value = fleet.maintenance;
         document.getElementById('avg-duration').textContent = avgDuration + ' hours';
+      }
+
+      async function toggleStaffStatus(phone, role, isActive) {
+        const token = localStorage.getItem('cycleride-token') || '';
+        const response = await fetch('/api/admins/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+          body: JSON.stringify({ phone, role, isActive })
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          alert(result.error || 'Unable to update staff access');
+          return;
+        }
+        window.allAdmins = result.admins || [];
+        loadTeam();
       }
 
       function loadTeam() {
         const list = document.getElementById('team-list');
         const admins = window.allAdmins || [];
         list.innerHTML = admins.length > 0
-          ? admins.map(a => `<div class="card"><p><strong>${a.phone}</strong></p><p>Role: ${a.role}</p></div>`).join('')
+          ? admins.map(a => `<div class="card"><p><strong>${a.name || a.phone}</strong></p><p>Phone: ${a.phone}</p><p>Role: ${a.role}</p><p>Status: ${a.isActive === false ? 'Revoked' : 'Active'}</p><div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"><button onclick="toggleStaffStatus('${a.phone}', '${a.role}', ${a.isActive === false ? 'true' : 'false'})">${a.isActive === false ? 'Restore access' : 'Revoke access'}</button></div></div>`).join('')
           : '<p>No team members found</p>';
       }
 

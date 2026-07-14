@@ -120,7 +120,7 @@ function saveData(filename, data) {
 }
 
 function ensureDataFiles() {
-  const requiredFiles = ['orders.json', 'messages.json', 'archived-orders.json', 'archived-messages.json', 'otps.json', 'sessions.json', 'admins.json'];
+  const requiredFiles = ['orders.json', 'messages.json', 'archived-orders.json', 'archived-messages.json', 'otps.json', 'sessions.json', 'admins.json', 'archive-state.json'];
   for (const file of requiredFiles) {
     const filePath = getDataPath(file);
     if (!fs.existsSync(filePath)) {
@@ -181,6 +181,56 @@ async function loadArchivedMessages() {
   return loadData('archived-messages.json');
 }
 
+function loadArchiveState() {
+  const state = loadData('archive-state.json');
+  return state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+}
+
+function saveArchiveState(state) {
+  saveData('archive-state.json', state);
+}
+
+function calculateRentalAmount(subtotal, duration) {
+  const normalizedDuration = Math.max(1, parseInt(duration, 10) || 1);
+  const baseCharge = Math.max(250, Number(subtotal) || 0);
+  const extraHours = Math.max(0, normalizedDuration - 2);
+  return baseCharge + extraHours * 75;
+}
+
+function archiveCurrentOrders(reason = 'daily') {
+  const today = new Date().toISOString().slice(0, 10);
+  const archiveState = loadArchiveState();
+  if (archiveState.lastArchiveDate === today) {
+    return { archived: [], skipped: true, message: 'Orders already archived for today.' };
+  }
+
+  const ordersToArchive = orders.map((order) => ({ ...order }));
+  if (ordersToArchive.length === 0) {
+    archiveState.lastArchiveDate = today;
+    archiveState.archiveReason = reason;
+    saveArchiveState(archiveState);
+    return { archived: [], skipped: true, message: 'No active orders to archive.' };
+  }
+
+  const archivedAt = new Date().toLocaleString();
+  const archiveRecords = ordersToArchive.map((order) => ({
+    ...order,
+    archivedAt,
+    archiveDate: today,
+    archiveReason: reason
+  }));
+
+  archivedOrders = archivedOrders.concat(archiveRecords);
+  orders = [];
+  saveData('orders.json', orders);
+  saveData('archived-orders.json', archivedOrders);
+  archiveState.lastArchiveDate = today;
+  archiveState.archiveReason = reason;
+  archiveState.archivedCount = archivedOrders.length;
+  saveArchiveState(archiveState);
+  return { archived: archiveRecords, skipped: false, message: `Archived ${archiveRecords.length} order(s) for ${today}.` };
+}
+
 async function persistOtp(phone, role, otp, expires) {
   otps = otps.filter((item) => !(item.phone === phone && item.role === role));
   otps.push({ phone, role, otp, expires });
@@ -202,6 +252,21 @@ async function persistSession(token, phone, role, expires) {
   saveData('sessions.json', sessions);
 }
 
+function normalizeAdminRecord(admin, fallbackRole = 'admin') {
+  const role = admin?.role || fallbackRole;
+  return {
+    phone: admin?.phone || '',
+    role,
+    password: admin?.password || '',
+    name: admin?.name || '',
+    isActive: admin?.isActive !== false
+  };
+}
+
+function normalizeAdminsData() {
+  admins = admins.map((admin) => normalizeAdminRecord(admin, admin?.role || 'admin'));
+}
+
 async function loadSessions() {
   return loadData('sessions.json');
 }
@@ -211,13 +276,16 @@ async function clearSession(token) {
   saveData('sessions.json', sessions);
 }
 
-async function upsertAdmin(phone, role, password) {
+async function upsertAdmin(phone, role, password, name = '') {
   const existing = admins.find((item) => item.phone === phone && item.role === role);
   if (existing) {
     existing.password = password;
+    existing.name = name || existing.name || '';
+    existing.isActive = existing.isActive !== false;
   } else {
-    admins.push({ phone, role, password });
+    admins.push({ phone, role, password, name, isActive: true });
   }
+  normalizeAdminsData();
   saveData('admins.json', admins);
 }
 
@@ -228,11 +296,12 @@ async function loadAdmins() {
 function upgradePlainPasswords() {
   let updated = false;
   admins = admins.map((admin) => {
-    if (admin.password && !admin.password.startsWith('$2')) {
+    const normalized = normalizeAdminRecord(admin, admin?.role || 'admin');
+    if (normalized.password && !normalized.password.startsWith('$2')) {
       updated = true;
-      return { ...admin, password: hashPassword(admin.password) };
+      return { ...normalized, password: hashPassword(normalized.password) };
     }
-    return { ...admin, password: admin.password || '' };
+    return { ...normalized, password: normalized.password || '' };
   });
   if (updated) {
     saveData('admins.json', admins);
@@ -244,16 +313,19 @@ async function deleteAdmin(phone, role) {
   saveData('admins.json', admins);
 }
 
-function upsertStaffAccount(phone, role, password) {
+function upsertStaffAccount(phone, role, password, name = '') {
   const hashedPassword = hashPassword(password);
   const existingAdmin = admins.find((admin) => admin.phone === phone && admin.role === role);
   if (existingAdmin) {
     existingAdmin.password = hashedPassword;
+    existingAdmin.name = name || existingAdmin.name || '';
+    existingAdmin.isActive = existingAdmin.isActive !== false;
   } else {
-    admins.push({ phone, role, password: hashedPassword });
+    admins.push({ phone, role, password: hashedPassword, name, isActive: true });
   }
+  normalizeAdminsData();
   saveData('admins.json', admins);
-  upsertAdmin(phone, role, hashedPassword).catch(() => {});
+  upsertAdmin(phone, role, hashedPassword, name).catch(() => {});
   clearLoginAttempts(phone, role);
 }
 
@@ -266,7 +338,9 @@ async function initializeData() {
   otps = loadData('otps.json');
   sessions = loadData('sessions.json');
   admins = loadData('admins.json');
+  normalizeAdminsData();
   upgradePlainPasswords();
+  archiveCurrentOrders('daily');
 }
 
 // Persistent storage for orders, messages, otps, sessions, admin accounts, and archived orders
@@ -354,6 +428,9 @@ app.post('/api/login', (req, res) => {
     if (adminUser) recordFailedLogin(phone, role);
     return res.status(401).json({ success:false, error: 'Invalid login credentials' });
   }
+  if (adminUser.isActive === false) {
+    return res.status(403).json({ success:false, error: 'This staff account has been revoked.' });
+  }
 
   clearLoginAttempts(phone, role);
   if (adminUser.password && !adminUser.password.startsWith('$2')) {
@@ -380,7 +457,13 @@ app.post('/api/orders/:id/confirm', requireManager, async (req, res) => {
   const order = orders.find(o => o.id === req.params.id || o.billId === req.params.id);
   if (!order) return res.status(404).json({ success:false, error:'Order not found' });
 
+  const actor = admins.find((admin) => admin.phone === req.auth?.phone && admin.role === req.auth?.role);
   order.status = 'confirmed';
+  order.paymentStatus = order.paymentStatus || 'paid';
+  order.confirmedByName = actor?.name?.trim() || actor?.phone || 'Staff';
+  order.confirmedByRole = req.auth?.role || 'manager';
+  order.confirmedByPhone = req.auth?.phone || '';
+  order.confirmedAt = new Date().toLocaleString();
   saveData('orders.json', orders);
   await updateOrderStatus(order.id, 'confirmed');
 
@@ -404,29 +487,52 @@ app.post('/api/orders/payment-status', requireAuth, (req, res) => {
 });
 
 app.post('/api/manager/reset-month', requireManager, async (req, res) => {
+  const password = sanitizeString(req.body?.password || '');
+  if (!password) {
+    return res.status(400).json({ success:false, error:'Manager password is required.' });
+  }
+
+  const managerUser = admins.find((admin) => admin.phone === req.auth.phone && admin.role === 'manager');
+  if (!managerUser || !verifyPassword(managerUser.password || '', password)) {
+    return res.status(401).json({ success:false, error:'Invalid manager password.' });
+  }
+
   const resetMonth = new Date().toISOString().slice(0, 7);
   const archivedAt = new Date().toLocaleString();
-  const snapshotOrders = orders.map(o => ({ ...o }));
-  const snapshotMessages = messages.map(m => ({ ...m }));
+  const today = new Date().toISOString().slice(0, 10);
+  const snapshotOrders = orders.map((o) => ({ ...o }));
+  const snapshotMessages = messages.map((m) => ({ ...m }));
 
-  for (const order of snapshotOrders) {
-    await archiveOrder(order, archivedAt, resetMonth);
-  }
-  for (const message of snapshotMessages) {
-    await archiveMessage(message, archivedAt, resetMonth);
-  }
+  const archiveRecords = snapshotOrders.map((order) => ({
+    ...order,
+    archivedAt,
+    resetMonth,
+    archiveDate: today,
+    archiveReason: 'monthly'
+  }));
+  const archivedMessageRecords = snapshotMessages.map((message) => ({
+    ...message,
+    archivedAt,
+    resetMonth,
+    archiveDate: today,
+    archiveReason: 'monthly'
+  }));
 
-  archivedOrders = [...archivedOrders, ...snapshotOrders.map(o => ({ ...o, archivedAt, resetMonth }))];
-  archivedMessages = [...archivedMessages, ...snapshotMessages.map(m => ({ ...m, archivedAt, resetMonth }))];
-
+  archivedOrders = archivedOrders.concat(archiveRecords);
+  archivedMessages = archivedMessages.concat(archivedMessageRecords);
   orders = [];
   messages = [];
+
   saveData('orders.json', orders);
   saveData('messages.json', messages);
   saveData('archived-orders.json', archivedOrders);
   saveData('archived-messages.json', archivedMessages);
-  await clearOrders();
-  await clearMessages();
+  saveArchiveState({
+    ...(loadArchiveState()),
+    lastArchiveDate: today,
+    archiveReason: 'monthly',
+    archivedCount: archivedOrders.length
+  });
 
   res.json({ success:true, message:`Monthly reset complete. ${snapshotOrders.length} orders and ${snapshotMessages.length} messages were archived to local storage.` });
 });
@@ -438,6 +544,8 @@ app.post('/api/checkout', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  const normalizedDuration = Math.max(1, parseInt(duration, 10) || 1);
+  const rentalAmount = calculateRentalAmount(subtotal || 0, normalizedDuration);
   const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
   const order = {
     id: `BK-${Date.now()}`,
@@ -447,16 +555,17 @@ app.post('/api/checkout', async (req, res) => {
     phone,
     rentalDate,
     rentalTime,
-    duration: parseInt(duration),
+    duration: normalizedDuration,
     pickupLocation: pickupLocation || 'Worli Promenade, Mumbai',
     paymentMethod,
     subscriptionPlan: subscriptionPlan || 'one-time',
     subscriptionCost: subscriptionCost || 0,
     items,
-    subtotal,
+    subtotal: subtotal || 0,
+    rentalAmount,
     tax: 0,
-    deposit,
-    total,
+    deposit: deposit || 500,
+    total: rentalAmount + (deposit || 500),
     date: new Date().toLocaleString(),
     status: 'pending',
     paymentStatus: paymentMethod === 'upi' ? 'pending' : 'paid'
@@ -489,6 +598,8 @@ app.post('/api/billing', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  const normalizedDuration = Math.max(1, parseInt(duration, 10) || 1);
+  const computedRentalAmount = calculateRentalAmount(subtotal || 0, normalizedDuration);
   const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
   const order = {
     id: `BK-${Date.now()}`,
@@ -499,15 +610,15 @@ app.post('/api/billing', async (req, res) => {
     email: email || '',
     rentalDate,
     rentalTime,
-    duration: parseInt(duration),
+    duration: normalizedDuration,
     pickupLocation: pickupLocation || 'Worli Promenade, Mumbai',
     paymentMethod,
     items: items || [],
     subtotal: subtotal || 0,
-    rentalAmount: rentalAmount || 0,
+    rentalAmount: rentalAmount || computedRentalAmount,
     tax: tax || 0,
     deposit: deposit || 500,
-    total: total || 0,
+    total: total || (rentalAmount || computedRentalAmount) + (deposit || 500),
     date: new Date().toLocaleString(),
     status: 'pending',
     paymentStatus: paymentMethod === 'upi' ? 'pending' : 'paid'
@@ -551,6 +662,9 @@ app.get('/api/billing', requireAuth, (req, res) => {
     paymentMethod: o.paymentMethod,
     status: o.status,
     paymentStatus: o.paymentStatus || (o.status === 'confirmed' ? 'paid' : 'pending'),
+    confirmedByName: o.confirmedByName || '',
+    confirmedByRole: o.confirmedByRole || '',
+    confirmedAt: o.confirmedAt || '',
     date: o.date
   })));
 });
@@ -650,6 +764,7 @@ app.post('/api/register', (req, res) => {
   const otp = sanitizeString(req.body.otp);
   const role = sanitizeString(req.body.role);
   const password = sanitizeString(req.body.password);
+  const name = sanitizeString(req.body.name);
   if (!phone || !otp || !role || !password) {
     return res.status(400).json({ success:false, error: 'Phone, OTP, role, and password are required' });
   }
@@ -671,7 +786,7 @@ app.post('/api/register', (req, res) => {
     return res.status(400).json({ success:false, error: 'Invalid OTP' });
   }
 
-  upsertStaffAccount(normalizedPhone, role, password);
+  upsertStaffAccount(normalizedPhone, role, password, name);
 
   const token = (Date.now().toString(36) + Math.random().toString(36).slice(2,10));
   const expires = Date.now() + 24*60*60*1000;
@@ -693,6 +808,7 @@ app.post('/api/verify-otp', (req, res) => {
   const otp = sanitizeString(req.body.otp);
   const role = sanitizeString(req.body.role);
   const password = sanitizeString(req.body.password);
+  const name = sanitizeString(req.body.name);
   if (!phone || !otp || !role || !password) {
     return res.status(400).json({ success:false, error: 'Phone, OTP, role, and password are required' });
   }
@@ -714,7 +830,7 @@ app.post('/api/verify-otp', (req, res) => {
     return res.status(400).json({ success:false, error: 'Invalid OTP' });
   }
 
-  upsertStaffAccount(normalizedPhone, role, password);
+  upsertStaffAccount(normalizedPhone, role, password, name);
   clearLoginAttempts(normalizedPhone, role);
 
   const token = (Date.now().toString(36) + Math.random().toString(36).slice(2,10));
@@ -795,13 +911,30 @@ app.get('/api/admins', requireManager, (req,res)=>{
 });
 
 app.post('/api/admins', requireManager, (req,res)=>{
-  const { phone, role } = req.body;
+  const { phone, role, name } = req.body;
   if (!phone || !role || (role !== 'admin' && role !== 'manager')) return res.status(400).json({ success:false, error:'Phone and valid role required'});
   const normalizedPhone = phone.trim();
   if (admins.some(a=>a.phone===normalizedPhone && a.role===role)) return res.status(400).json({ success:false, error:'Admin already exists'});
-  admins.push({ phone: normalizedPhone, role });
+  const staffRecord = { phone: normalizedPhone, role, name: name || '', isActive: true };
+  admins.push(staffRecord);
+  normalizeAdminsData();
   saveData('admins.json', admins);
-  upsertAdmin(normalizedPhone, role, '').catch(() => {});
+  upsertAdmin(normalizedPhone, role, '', name || '').catch(() => {});
+  res.json({ success:true, admins });
+});
+
+app.post('/api/admins/revoke', requireManager, (req,res)=>{
+  const { phone, role, isActive } = req.body;
+  if (!phone || !role || (role !== 'admin' && role !== 'manager')) {
+    return res.status(400).json({ success:false, error:'Phone and valid role required'});
+  }
+  const target = admins.find((admin) => admin.phone === phone && admin.role === role);
+  if (!target) return res.status(404).json({ success:false, error:'Staff account not found'});
+  target.isActive = isActive !== false;
+  normalizeAdminsData();
+  saveData('admins.json', admins);
+  sessions = sessions.filter((session) => !(session.phone === phone && session.role === role));
+  saveData('sessions.json', sessions);
   res.json({ success:true, admins });
 });
 
@@ -825,8 +958,13 @@ app.post('/api/orders/confirm', requireAuth, (req, res) => {
   const idx = orders.findIndex(o => o.id === orderId || o.billId === orderId);
   if (idx === -1) return res.status(404).json({ error: 'Order not found' });
 
+  const actor = admins.find((admin) => admin.phone === req.auth?.phone && admin.role === req.auth?.role);
   orders[idx].status = 'confirmed';
   orders[idx].paymentStatus = orders[idx].paymentStatus || 'paid';
+  orders[idx].confirmedByName = actor?.name?.trim() || actor?.phone || 'Staff';
+  orders[idx].confirmedByRole = req.auth?.role || 'admin';
+  orders[idx].confirmedByPhone = req.auth?.phone || '';
+  orders[idx].confirmedAt = new Date().toLocaleString();
   saveData('orders.json', orders);
   // send email notification if SMTP configured
   const order = orders[idx];
@@ -871,16 +1009,28 @@ app.get('/api/orders/archived', requireAuth, (req, res) => {
   res.json(archivedOrders);
 });
 
-app.post('/api/orders/archive', requireAuth, (req, res) => {
-  const toArchive = orders.filter(o => o.status === 'confirmed');
-  if (toArchive.length === 0) {
-    return res.json({ success:true, message:'No confirmed orders to archive.', archived: [] });
-  }
-  archivedOrders = archivedOrders.concat(toArchive);
-  orders = orders.filter(o => o.status !== 'confirmed');
-  saveData('orders.json', orders);
+app.post('/api/orders/archive-daily', requireAuth, (req, res) => {
+  const result = archiveCurrentOrders('daily');
+  res.json({ success: true, ...result });
+});
+
+app.post('/api/orders/archive/save', requireAuth, (req, res) => {
+  const result = archiveCurrentOrders('daily');
+  res.json({ success: true, ...result, archivedCount: archivedOrders.length });
+});
+
+app.post('/api/orders/archive/delete', requireAuth, (req, res) => {
   saveData('archived-orders.json', archivedOrders);
-  res.json({ success:true, message:`Archived ${toArchive.length} completed order(s).`, archived: toArchive });
+  const before = archivedOrders.length;
+  archivedOrders = [];
+  saveData('archived-orders.json', archivedOrders);
+  saveArchiveState({ ...loadArchiveState(), archivedCount: 0 });
+  res.json({ success: true, message: `Archive file saved and ${before} archived order(s) cleared.`, archivedCount: before });
+});
+
+app.post('/api/orders/archive', requireAuth, (req, res) => {
+  const result = archiveCurrentOrders('manual');
+  res.json({ success: true, ...result, archivedCount: archivedOrders.length });
 });
 
 app.post('/api/orders/clear', requireAuth, (req, res) => {
@@ -919,6 +1069,15 @@ app.post('/api/messages/:id/archive', requireAuth, (req, res) => {
   res.json({ success:true, message:'Message archived', archived });
 });
 
+function scheduleDailyArchive() {
+  setInterval(() => {
+    const result = archiveCurrentOrders('daily');
+    if (!result.skipped) {
+      console.log(`[archive] ${result.message}`);
+    }
+  }, 60 * 60 * 1000);
+}
+
 async function startServer(port) {
   let activePort = port;
   while (true) {
@@ -929,6 +1088,7 @@ async function startServer(port) {
         const server = app.listen(activePort, () => {
           console.log(`🚴 Cycling Brand Website running at http://localhost:${activePort}`);
           console.log(`Open site: http://localhost:${activePort}`);
+          scheduleDailyArchive();
           console.log(`Staff login: http://localhost:${activePort}/login`);
           console.log(`Products: http://localhost:${activePort}/products`);
           console.log(`Contact: http://localhost:${activePort}/contact`);
