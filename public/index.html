@@ -2,13 +2,39 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <meta name="google-site-verification" content="yHYLBuAwUNtGr_dRQ9d9I7st5KHDkEcxXavok15Laro" />
+
+    <!-- SEO -->
+    <meta name="description" content="Sea Shore Cycling Club Worli offers premium bicycle rentals at Worli Sea Face, Mumbai. Book high-quality cycles online with affordable hourly pricing." />
+
+    <meta name="keywords" content="cycle rental Worli, bicycle rental Mumbai, cycling club Worli, cycle on rent Mumbai, bicycle hire Worli" />
+
+    <meta name="robots" content="index, follow" />
+
+    <link rel="canonical" href="https://sea-shore-cycling-club-worli.onrender.com/" />
+
     <title>Sea Shore Cycling Club Worli | Premium Cycle Rentals</title>
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Sea Shore Cycling Club Worli" />
+    <meta property="og:description" content="Premium bicycle rentals near Worli Sea Face, Mumbai." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sea-shore-cycling-club-worli.onrender.com/" />
+    <meta property="og:image" content="https://sea-shore-cycling-club-worli.onrender.com/images/logo.png" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Sea Shore Cycling Club Worli" />
+    <meta name="twitter:description" content="Premium bicycle rentals at Worli Sea Face." />
+    <meta name="twitter:image" content="https://sea-shore-cycling-club-worli.onrender.com/images/logo.png" />
+
     <link rel="stylesheet" href="/css/styles.css" />
     <script src="/js/app.js"></script>
-  </head>
-  <body>
+</head>
+  <body class="index-page">
     <header class="hero">
       <nav class="top-nav">
         <a href="/" class="brand">Sea Shore Cycling Club Worli</a>
@@ -23,7 +49,7 @@
         <div>
           <p class="eyebrow">Worli shoreline rides</p>
           <h1>Discover the coast on a premium rental bike.</h1>
-          <p>Book a refined ride for ₹250 per 2 hours with a refundable deposit of ₹500.</p>
+          <p>Book a ride from ₹200 per hour with a refundable deposit of ₹500.</p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="/products">Book a ride</a>
             <a class="btn btn-secondary" href="/contact">Plan your route</a>
@@ -33,7 +59,27 @@
     </header>
 
     <main>
+      <section class="section gallery-section">
+        <h2>Ride gallery</h2>
+        <p class="muted">Browse photos from our Worli route and rental bikes.</p>
+        <div class="image-carousel" aria-label="Ride gallery carousel">
+          <button class="carousel-arrow carousel-arrow-prev" type="button" aria-label="Previous image">‹</button>
+          <div class="carousel-track" id="carousel-track">
+            <img src="/images/sea-face-1.jpeg" alt="Cycling along the Worli shoreline" />
+            <img src="/images/sea-face-2.jpeg" alt="Rental bicycles parked near the sea" />
+            <img src="/images/sea-face-3.jpeg" alt="Scenic coastal cycling route" />
+            <img src="/images/sea-face-4.jpeg" alt="Cycling group on Worli sea face" />
+            <img src="/images/sea-face-5.jpeg" alt="Bikes ready for rent" />
+            <img src="/images/sea-face-6.jpeg" alt="Sunset bike ride at the shore" />
+            <img src="/images/sea-face-7.jpeg" alt="Cyclists enjoying the beach view" />
+          </div>
+          <button class="carousel-arrow carousel-arrow-next" type="button" aria-label="Next image">›</button>
+        </div>
+      </section>
+
       <section class="section">
+        <h2>About Worli Promenade</h2>
+        <p class="muted">The Worli Promenade is a scenic 2.5 km waterfront walkway along the Arabian Sea in Mumbai. Famous for its stunning views of the Bandra–Worli Sea Link, it is a popular destination for cycling, jogging, walking, and enjoying beautiful sunsets. Rent a bicycle with us and experience one of Mumbai's most picturesque coastal rides.</p>
         <h2>Our signature rental</h2>
         <div class="product-grid" id="featured-products"></div>
       </section>
@@ -47,7 +93,7 @@
           </article>
           <article>
             <h3>Flexible hourly booking</h3>
-            <p>Simple rentals from ₹250 per 2 hours, ideal for quick escapes or sunset rides.</p>
+            <p>Simple rentals from ₹200 per hour, ideal for quick escapes or sunset rides.</p>
           </article>
           <article>
             <h3>Hassle-free return</h3>
@@ -55,24 +101,68 @@
           </article>
         </div>
       </section>
+
+      <section class="section visit-us-section">
+        <h2>Visit us</h2>
+        <div class="visit-box">
+          <p class="muted">Near PUP No: 12, Worli Promenade, Mumbai.</p>
+          <p class="muted">Coordinates: 19°00'13.4"N 72°48'44.5"E</p>
+          <a class="btn btn-secondary" href="https://www.google.com/maps/search/?api=1&query=19.003722,72.812361" target="_blank" rel="noopener">Open location in Google Maps</a>
+        </div>
+      </section>
     </main>
 
     <script>
-      const productGrid = document.getElementById('featured-products');
-      productGrid.innerHTML = window.CycleRide.PRODUCTS.map((product) => `
-        <article class="card">
-          <div class="card-top">
-            <span class="badge">${product.badge}</span>
-            <h3>${product.name}</h3>
-          </div>
-          <p>${product.description}</p>
-          <div class="card-footer">
-            <strong>${window.CycleRide.formatCurrency(product.price)} / 2 hrs</strong>
-            <button class="btn btn-primary" data-add-to-cart="${product.id}">Book now</button>
-          </div>
-        </article>
-      `).join('');
-      window.CycleRide.attachAddToCartButtons();
-    </script>
+  const productGrid = document.getElementById('featured-products');
+  productGrid.innerHTML = window.CycleRide.PRODUCTS.map((product) => `
+    <article class="card">
+      <div class="card-top">
+        <span class="badge">${product.badge}</span>
+        <h3>${product.name}</h3>
+      </div>
+      <p>${product.description}</p>
+      <div class="card-footer">
+        <strong>${window.CycleRide.formatCurrency(product.price)} / hour</strong>
+        <button class="btn btn-primary" data-add-to-cart="${product.id}">Book now</button>
+      </div>
+    </article>
+  `).join('');
+  window.CycleRide.attachAddToCartButtons();
+
+  const carouselTrack = document.getElementById('carousel-track');
+  if (carouselTrack) {
+    const slides = Array.from(carouselTrack.children);
+    let slideIndex = 0;
+    const prevButton = document.querySelector('.carousel-arrow-prev');
+    const nextButton = document.querySelector('.carousel-arrow-next');
+
+    const scrollToSlide = (index) => {
+      slideIndex = Math.max(0, Math.min(slides.length - 1, index));
+      slides[slideIndex].scrollIntoView({ behavior: 'smooth', inline: 'center' });
+    };
+
+    prevButton?.addEventListener('click', () => scrollToSlide(slideIndex - 1));
+    nextButton?.addEventListener('click', () => scrollToSlide(slideIndex + 1));
+  }
+</script>
+
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"SportsActivityLocation",
+  "name":"Sea Shore Cycling Club Worli",
+  "url":"https://sea-shore-cycling-club-worli.onrender.com/",
+  "description":"Premium bicycle rentals at Worli Sea Face.",
+  "address":{
+    "@type":"PostalAddress",
+    "addressLocality":"Worli",
+    "addressRegion":"Maharashtra",
+    "addressCountry":"IN"
+  }
+}
+</script>
+
+</body>
+</html>
   </body>
 </html>

@@ -192,9 +192,11 @@ function saveArchiveState(state) {
 
 function calculateRentalAmount(subtotal, duration) {
   const normalizedDuration = Math.max(1, parseInt(duration, 10) || 1);
-  const baseCharge = Math.max(250, Number(subtotal) || 0);
-  const extraHours = Math.max(0, normalizedDuration - 2);
-  return baseCharge + extraHours * 75;
+  const normalizedSubtotal = Number(subtotal) || 0;
+  if (normalizedSubtotal > 0) {
+    return normalizedSubtotal * normalizedDuration;
+  }
+  return 200 * normalizedDuration;
 }
 
 function archiveCurrentOrders(reason = 'daily') {

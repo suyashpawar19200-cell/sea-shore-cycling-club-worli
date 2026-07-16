@@ -7,9 +7,11 @@ let saveCartItems = typeof rideApi.saveCart === 'function' ? rideApi.saveCart : 
 let getCartSubtotalFn = typeof rideApi.getCartSubtotal === 'function' ? rideApi.getCartSubtotal : () => getCartSubtotalSnapshot();
 let calculateRentalCharge = typeof rideApi.calculateRentalCharge === 'function' ? rideApi.calculateRentalCharge : (subtotal, duration) => {
   const normalizedDuration = Math.max(1, parseInt(duration, 10) || 1);
-  const baseCharge = 250;
-  const extraHours = Math.max(0, normalizedDuration - 2);
-  return 250;
+  const normalizedSubtotal = Number(subtotal) || 0;
+  if (normalizedSubtotal > 0) {
+    return normalizedSubtotal * normalizedDuration;
+  }
+  return 200 * normalizedDuration;
 };
 let updateCartCountFn = typeof rideApi.updateCartCount === 'function' ? rideApi.updateCartCount : () => {};
 

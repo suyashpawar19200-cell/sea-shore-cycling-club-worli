@@ -2,12 +2,21 @@ const STORAGE_KEY = 'seashore-cart';
 
 const PRODUCTS = [
   {
-    id: 'sea-shore-rental',
-    name: 'Sea Shore Cycling Club Rental',
-    price: 250,
+    id: 'non-geared-cycle',
+    name: 'Non-Geared Cycle Rental',
+    price: 200,
     category: 'Rental',
-    description: 'Premium beachside bike hire with helmet, lock, and route guidance. ₹250 for the first 2 hours.',
-    badge: '₹250 / 2 hrs',
+    description: 'Classic non-geared cycle for easy rides along Worli Promenade. Includes helmet, lock, and route guidance. ₹200 per hour.',
+    badge: '₹200 / hr',
+    deposit: 500
+  },
+  {
+    id: 'geared-cycle',
+    name: 'Geared Cycle Rental',
+    price: 300,
+    category: 'Rental',
+    description: 'Sporty geared cycle for steeper stretches and smoother coastal rides. Includes helmet, lock, and route guidance. ₹300 per hour.',
+    badge: '₹300 / hr',
     deposit: 500
   }
 ];
@@ -92,7 +101,12 @@ function getCartSubtotal() {
 }
 
 function calculateRentalCharge(subtotal, duration) {
-  return 250;
+  const normalizedDuration = Math.max(1, Number(duration) || 1);
+  const normalizedSubtotal = Number(subtotal) || 0;
+  if (normalizedSubtotal > 0) {
+    return normalizedSubtotal * normalizedDuration;
+  }
+  return 200 * normalizedDuration;
 }
 
 function updateCartCount() {

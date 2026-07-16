@@ -86,10 +86,11 @@
                 <p><strong>Total Amount:</strong> <span id="confirm-total"></span></p>
               </div>
               <div class="step-actions">
-                <span class="muted">Take a screenshot of this invoice. Our team will contact you after a while.</span>
+                <span class="muted">Your invoice is ready. Download it as a PDF for your records.</span>
               </div>
             </div>
-            <p class="muted">Take a screenshot of this invoice and save it for your records.</p>
+            <button class="btn btn-secondary hidden" id="download-invoice">Download Invoice as PDF</button>
+            <p class="muted">Download the PDF invoice and keep it for your records.</p>
             <p id="billing-message" class="message"></p>
           </div>
         </div>
@@ -121,8 +122,59 @@
 
     <script src="/js/app.js?v=20260714b"></script>
     <script src="/js/billing.js?v=20260714b"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
       const paymentMethodInput = document.getElementById('payment-method');
+      const downloadInvoiceButton = document.getElementById('download-invoice');
+      let latestInvoiceDetails = null;
+
+      function downloadInvoicePdf() {
+        if (!latestInvoiceDetails || !window.jspdf?.jsPDF) {
+          alert('Invoice PDF generation is not available.');
+          return;
+        }
+        const { invoiceNumber, orderId, customerName, rentalDate, rentalTime, pickupLocation, paymentMethod, total, items, rentalDuration } = latestInvoiceDetails;
+        const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+        const margin = 40;
+        let y = 50;
+        doc.setFontSize(18);
+        doc.text('Sea Shore Cycling Club Worli', margin, y);
+        y += 30;
+        doc.setFontSize(12);
+        doc.text(`Invoice Number: ${invoiceNumber}`, margin, y);
+        y += 18;
+        doc.text(`Booking ID: ${orderId}`, margin, y);
+        y += 18;
+        doc.text(`Customer Name: ${customerName}`, margin, y);
+        y += 18;
+        doc.text(`Rental Date & Time: ${rentalDate} at ${rentalTime}`, margin, y);
+        y += 18;
+        doc.text(`Pickup Location: ${pickupLocation}`, margin, y);
+        y += 18;
+        doc.text(`Payment Method: ${paymentMethod}`, margin, y);
+        y += 18;
+        doc.text(`Rental Duration: ${rentalDuration} hour(s)`, margin, y);
+        y += 28;
+        doc.setFontSize(14);
+        doc.text('Items', margin, y);
+        y += 18;
+        doc.setFontSize(12);
+        items.forEach((item) => {
+          const itemLine = `${item.name} x ${item.quantity} @ ₹${item.price} = ₹${item.price * item.quantity}`;
+          doc.text(itemLine, margin, y);
+          y += 16;
+        });
+        y += 18;
+        doc.text(`Deposit: ₹500`, margin, y);
+        y += 16;
+        doc.text(`Total Amount: ₹${total}`, margin, y);
+        y += 28;
+        doc.text('Thank you for booking with Sea Shore Cycling Club Worli.', margin, y);
+        doc.save(`invoice-${invoiceNumber || 'booking'}.pdf`);
+      }
+
+      downloadInvoiceButton?.addEventListener('click', downloadInvoicePdf);
+
       const upiQr = document.getElementById('upi-qr');
       const paymentNote = document.getElementById('payment-note');
       const confirmPayment = document.getElementById('confirm-payment');
@@ -173,7 +225,7 @@
         const durationInput = document.querySelector('input[name="duration"]');
         const rentalDuration = parseInt(durationInput?.value || 1, 10);
         const baseRentalAmount = cartItems.reduce((total, item) => total + (item.price || 0) * (item.quantity || 0), 0);
-        const rentalAmount = 250;
+        const rentalAmount = baseRentalAmount * rentalDuration;
         const total = rentalAmount + 500;
         if (!itemsContainer) return;
 
@@ -250,7 +302,7 @@
         const bookingDraft = JSON.parse(localStorage.getItem('cycle-ride-booking-draft') || '{}');
         const rentalDuration = parseInt(bookingDraft.duration || 1, 10);
         const subtotal = getCartSubtotalSnapshot();
-        const rentalAmount = 250;
+        const rentalAmount = subtotal * rentalDuration;
         const payload = {
           ...bookingDraft,
           paymentMethod,
@@ -278,6 +330,21 @@
           document.getElementById('confirm-payment-method').textContent = paymentMethod.toUpperCase();
           document.getElementById('confirm-status').textContent = result.status || 'Confirmed';
           document.getElementById('confirm-total').textContent = `₹${result.total || payload.total || 0}`;
+          latestInvoiceDetails = {
+            invoiceNumber: result.invoiceNumber || 'N/A',
+            orderId: result.orderId || 'N/A',
+            customerName: payload.customerName || 'N/A',
+            rentalDate: payload.rentalDate || 'N/A',
+            rentalTime: payload.rentalTime || 'N/A',
+            pickupLocation: payload.pickupLocation || 'Worli Promenade, Mumbai',
+            paymentMethod: paymentMethod.toUpperCase(),
+            total: result.total || payload.total || 0,
+            items: cartItems,
+            rentalDuration,
+          };
+          if (downloadInvoiceButton) {
+            downloadInvoiceButton.classList.remove('hidden');
+          }
           localStorage.setItem('seashore-cart', '[]');
           messageBox.textContent = result.message;
           showStep(3);

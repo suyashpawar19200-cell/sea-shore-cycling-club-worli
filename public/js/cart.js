@@ -49,7 +49,7 @@ function renderCart() {
       <div>
         <h3>${item.name}</h3>
         <p>${item.description}</p>
-        <p class="muted">${formatCurrencyFn(item.price)} for the first 2 hours</p>
+        <p class="muted">${formatCurrencyFn(item.price)} per hour</p>
       </div>
       <div class="cart-actions">
         <div class="quantity-controls">
