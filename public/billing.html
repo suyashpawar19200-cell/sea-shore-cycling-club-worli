@@ -39,6 +39,7 @@
               <label>Rental Time<input type="time" name="rentalTime" required /></label>
               <label>Duration (hours)<input type="number" name="duration" min="1" value="1" required /></label>
               <label>Pickup Location<input type="text" name="pickupLocation" value="Worli Promenade, Mumbai" /></label>
+              <div class="info-banner">Please carry a blurred Aadhar card for ID verification when you collect your cycle.</div>
               <button class="btn btn-primary" type="submit">Continue to payment</button>
             </form>
           </div>
@@ -52,6 +53,7 @@
               <p><strong>Phone:</strong> <span id="summary-phone">-</span></p>
               <p><strong>Rental:</strong> <span id="summary-datetime">-</span></p>
               <p><strong>Pickup:</strong> <span id="summary-pickup">-</span></p>
+              <div class="info-banner">A blurred Aadhar card is required at pickup for privacy and verification.</div>
             </div>
 
             <label>Payment Method
@@ -119,6 +121,10 @@
         </aside>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <p>© 2026 Sea Shore Cycling Club Worli. All rights reserved.</p>
+    </footer>
 
     <script src="/js/app.js?v=20260714b"></script>
     <script src="/js/billing.js?v=20260714b"></script>

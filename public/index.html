@@ -61,7 +61,7 @@
     <main>
       <section class="section gallery-section">
         <h2>Ride gallery</h2>
-        <p class="muted">Browse photos from our Worli route and rental bikes.</p>
+        <p class="muted">Swipe, tap the arrows, or use the dots to browse our promotional gallery.</p>
         <div class="image-carousel" aria-label="Ride gallery carousel">
           <button class="carousel-arrow carousel-arrow-prev" type="button" aria-label="Previous image">‹</button>
           <div class="carousel-track" id="carousel-track">
@@ -73,6 +73,7 @@
             <img src="/images/sea-face-6.jpeg" alt="Sunset bike ride at the shore" />
             <img src="/images/sea-face-7.jpeg" alt="Cyclists enjoying the beach view" />
           </div>
+          <div class="carousel-dots" id="carousel-dots" aria-label="Carousel navigation"></div>
           <button class="carousel-arrow carousel-arrow-next" type="button" aria-label="Next image">›</button>
         </div>
       </section>
@@ -107,10 +108,15 @@
         <div class="visit-box">
           <p class="muted">Near PUP No: 12, Worli Promenade, Mumbai.</p>
           <p class="muted">Coordinates: 19°00'13.4"N 72°48'44.5"E</p>
+          <p class="muted">Spot rentals are available near the promenade for quick pickups and scenic rides.</p>
           <a class="btn btn-secondary" href="https://www.google.com/maps/search/?api=1&query=19.003722,72.812361" target="_blank" rel="noopener">Open location in Google Maps</a>
         </div>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <p>© 2026 Sea Shore Cycling Club Worli. All rights reserved.</p>
+    </footer>
 
     <script>
   const productGrid = document.getElementById('featured-products');
@@ -130,19 +136,55 @@
   window.CycleRide.attachAddToCartButtons();
 
   const carouselTrack = document.getElementById('carousel-track');
+  const carouselDots = document.getElementById('carousel-dots');
   if (carouselTrack) {
     const slides = Array.from(carouselTrack.children);
     let slideIndex = 0;
+    let autoplayTimer = null;
     const prevButton = document.querySelector('.carousel-arrow-prev');
     const nextButton = document.querySelector('.carousel-arrow-next');
 
+    const updateDots = () => {
+      if (!carouselDots) return;
+      carouselDots.innerHTML = slides.map((_, index) => `
+        <button class="carousel-dot${index === slideIndex ? ' active' : ''}" type="button" aria-label="Go to image ${index + 1}" aria-current="${index === slideIndex ? 'true' : 'false'}"></button>
+      `).join('');
+      carouselDots.querySelectorAll('.carousel-dot').forEach((dot, index) => {
+        dot.addEventListener('click', () => scrollToSlide(index));
+      });
+    };
+
+    const getSlideOffset = () => {
+      const slide = slides[0];
+      if (!slide) return 0;
+      const gap = parseFloat(getComputedStyle(carouselTrack).columnGap || getComputedStyle(carouselTrack).gap || '0');
+      return slide.getBoundingClientRect().width + gap;
+    };
+
     const scrollToSlide = (index) => {
       slideIndex = Math.max(0, Math.min(slides.length - 1, index));
-      slides[slideIndex].scrollIntoView({ behavior: 'smooth', inline: 'center' });
+      const offset = slideIndex * getSlideOffset();
+      carouselTrack.style.transform = `translateX(-${offset}px)`;
+      updateDots();
     };
 
     prevButton?.addEventListener('click', () => scrollToSlide(slideIndex - 1));
     nextButton?.addEventListener('click', () => scrollToSlide(slideIndex + 1));
+
+    const startAutoplay = () => {
+      clearInterval(autoplayTimer);
+      autoplayTimer = window.setInterval(() => {
+        scrollToSlide(slideIndex + 1);
+      }, 5000);
+    };
+
+    carouselTrack.addEventListener('mouseenter', () => clearInterval(autoplayTimer));
+    carouselTrack.addEventListener('mouseleave', startAutoplay);
+    window.addEventListener('resize', () => scrollToSlide(slideIndex));
+
+    startAutoplay();
+    updateDots();
+    scrollToSlide(0);
   }
 </script>
 
@@ -163,6 +205,4 @@
 </script>
 
 </body>
-</html>
-  </body>
 </html>

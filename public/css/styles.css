@@ -97,11 +97,9 @@ button, input, select, textarea { font: inherit; }
 .section { max-width: 1100px; margin: 0 auto; padding: 60px 24px; }
 .image-carousel {
   position: relative;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   margin-top: 24px;
-  padding-bottom: 8px;
+  padding: 8px 56px 18px;
 }
 .carousel-arrow {
   position: absolute;
@@ -119,6 +117,7 @@ button, input, select, textarea { font: inherit; }
   font-size: 1.5rem;
   color: var(--primary);
   z-index: 2;
+  backdrop-filter: blur(6px);
 }
 .carousel-arrow:hover {
   background: white;
@@ -133,6 +132,9 @@ button, input, select, textarea { font: inherit; }
   display: flex;
   gap: 18px;
   min-width: 100%;
+  padding: 4px 0;
+  transition: transform 0.35s ease;
+  will-change: transform;
 }
 .carousel-track img {
   flex: 0 0 80%;
@@ -141,11 +143,44 @@ button, input, select, textarea { font: inherit; }
   height: 340px;
   object-fit: cover;
   border-radius: 24px;
-  scroll-snap-align: center;
   border: 1px solid var(--border);
   box-shadow: 0 16px 40px rgba(15,76,92,.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.carousel-track img:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 44px rgba(15,76,92,.14);
+}
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.carousel-dot {
+  border: none;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(15, 76, 92, 0.24);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.carousel-dot.active {
+  background: var(--primary);
+  transform: scale(1.2);
 }
 .gallery-section .muted { margin-bottom: 24px; }
+.info-banner {
+  background: linear-gradient(135deg, rgba(15, 76, 92, 0.08), rgba(201, 155, 63, 0.14));
+  border: 1px solid rgba(15, 76, 92, 0.16);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  color: var(--primary);
+  font-weight: 600;
+}
 .visit-us-section .visit-box {
   background: #f0e6ff;
   border: 1px solid #d7c4ff;
@@ -206,6 +241,15 @@ button, input, select, textarea { font: inherit; }
 .badge { color: var(--primary); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
 .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
 .page { padding-bottom: 60px; }
+.site-footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  border-top: 1px solid var(--border);
+}
 .cart-layout, .checkout-layout, .contact-layout { display: grid; gap: 24px; grid-template-columns: 2fr 1fr; }
 #cart-items, #checkout-items { display: grid; gap: 12px; list-style: none; padding: 0; margin: 0; }
 .cart-item, .checkout-item { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
