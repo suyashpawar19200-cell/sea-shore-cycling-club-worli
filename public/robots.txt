@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
 
+# Main sitemap for search engine discovery
 Sitemap: https://sea-shore-cycling-club-worli.onrender.com/sitemap.xml
+
+# Allow common public pages to be crawled for verification and indexing
+Allow: /index.html
+Allow: /products
+Allow: /cart
+Allow: /contact
+Allow: /billing
+Allow: /login
