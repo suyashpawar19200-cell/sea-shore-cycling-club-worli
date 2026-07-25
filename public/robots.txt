@@ -1,7 +1,4 @@
-# Allow all crawlers to access the entire site
 User-agent: *
 Allow: /
-Disallow:
 
-# Sitemap for search engine discovery
 Sitemap: https://sea-shore-cycling-club-worli.onrender.com/sitemap.xml
