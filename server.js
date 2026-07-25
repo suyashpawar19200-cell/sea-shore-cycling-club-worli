@@ -24,13 +24,15 @@ app.use((req, res, next) => {
 });
 
 app.get('/robots.txt', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.type('text/plain');
-  res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+  res.send('User-agent: *\nAllow: /\n\nSitemap: https://sea-shore-cycling-club-worli.onrender.com/sitemap.xml');
 });
 
 app.get('/sitemap.xml', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.type('application/xml');
-  res.sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://sea-shore-cycling-club-worli.onrender.com/</loc>\n    <lastmod>2026-07-25</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n  <url>\n    <loc>https://sea-shore-cycling-club-worli.onrender.com/products</loc>\n    <lastmod>2026-07-25</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n  <url>\n    <loc>https://sea-shore-cycling-club-worli.onrender.com/cart</loc>\n    <lastmod>2026-07-25</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n  <url>\n    <loc>https://sea-shore-cycling-club-worli.onrender.com/billing</loc>\n    <lastmod>2026-07-25</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n  <url>\n    <loc>https://sea-shore-cycling-club-worli.onrender.com/contact</loc>\n    <lastmod>2026-07-25</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>\n</urlset>`);
 });
 
 app.use(express.static(path.join(__dirname, 'public')));

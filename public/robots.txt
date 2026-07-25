@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /api/
 
 Sitemap: https://sea-shore-cycling-club-worli.onrender.com/sitemap.xml
