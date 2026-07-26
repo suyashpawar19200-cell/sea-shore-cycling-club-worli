@@ -119,72 +119,30 @@
     </footer>
 
     <script>
-  const productGrid = document.getElementById('featured-products');
-  productGrid.innerHTML = window.CycleRide.PRODUCTS.map((product) => `
-    <article class="card">
-      <div class="card-top">
-        <span class="badge">${product.badge}</span>
-        <h3>${product.name}</h3>
-      </div>
-      <p>${product.description}</p>
-      <div class="card-footer">
-        <strong>${window.CycleRide.formatCurrency(product.price)} / hour</strong>
-        <button class="btn btn-primary" data-add-to-cart="${product.id}">Book now</button>
-      </div>
-    </article>
-  `).join('');
-  window.CycleRide.attachAddToCartButtons();
+  const renderFeaturedProducts = () => {
+    const productGrid = document.getElementById('featured-products');
+    if (!productGrid || !window.CycleRide) return;
 
-  const carouselTrack = document.getElementById('carousel-track');
-  const carouselDots = document.getElementById('carousel-dots');
-  if (carouselTrack) {
-    const slides = Array.from(carouselTrack.children);
-    let slideIndex = 0;
-    let autoplayTimer = null;
-    const prevButton = document.querySelector('.carousel-arrow-prev');
-    const nextButton = document.querySelector('.carousel-arrow-next');
+    productGrid.innerHTML = window.CycleRide.PRODUCTS.map((product) => `
+      <article class="card">
+        <div class="card-top">
+          <span class="badge">${product.badge}</span>
+          <h3>${product.name}</h3>
+        </div>
+        <p>${product.description}</p>
+        <div class="card-footer">
+          <strong>${window.CycleRide.formatCurrency(product.price)} / hour</strong>
+          <button class="btn btn-primary" data-add-to-cart="${product.id}">Book now</button>
+        </div>
+      </article>
+    `).join('');
+    window.CycleRide.attachAddToCartButtons();
+  };
 
-    const updateDots = () => {
-      if (!carouselDots) return;
-      carouselDots.innerHTML = slides.map((_, index) => `
-        <button class="carousel-dot${index === slideIndex ? ' active' : ''}" type="button" aria-label="Go to image ${index + 1}" aria-current="${index === slideIndex ? 'true' : 'false'}"></button>
-      `).join('');
-      carouselDots.querySelectorAll('.carousel-dot').forEach((dot, index) => {
-        dot.addEventListener('click', () => scrollToSlide(index));
-      });
-    };
-
-    const getSlideOffset = () => {
-      const slide = slides[0];
-      if (!slide) return 0;
-      const gap = parseFloat(getComputedStyle(carouselTrack).columnGap || getComputedStyle(carouselTrack).gap || '0');
-      return slide.getBoundingClientRect().width + gap;
-    };
-
-    const scrollToSlide = (index) => {
-      slideIndex = Math.max(0, Math.min(slides.length - 1, index));
-      const offset = slideIndex * getSlideOffset();
-      carouselTrack.style.transform = `translateX(-${offset}px)`;
-      updateDots();
-    };
-
-    prevButton?.addEventListener('click', () => scrollToSlide(slideIndex - 1));
-    nextButton?.addEventListener('click', () => scrollToSlide(slideIndex + 1));
-
-    const startAutoplay = () => {
-      clearInterval(autoplayTimer);
-      autoplayTimer = window.setInterval(() => {
-        scrollToSlide(slideIndex + 1);
-      }, 5000);
-    };
-
-    carouselTrack.addEventListener('mouseenter', () => clearInterval(autoplayTimer));
-    carouselTrack.addEventListener('mouseleave', startAutoplay);
-    window.addEventListener('resize', () => scrollToSlide(slideIndex));
-
-    startAutoplay();
-    updateDots();
-    scrollToSlide(0);
+  if (window.CycleRide) {
+    renderFeaturedProducts();
+  } else {
+    window.addEventListener('load', renderFeaturedProducts);
   }
 </script>
 

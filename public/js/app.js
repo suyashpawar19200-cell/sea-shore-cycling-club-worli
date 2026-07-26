@@ -132,6 +132,93 @@ function attachAddToCartButtons() {
   });
 }
 
+function initCarousel() {
+  const carouselTrack = document.getElementById('carousel-track');
+  const carouselDots = document.getElementById('carousel-dots');
+  if (!carouselTrack) return;
+
+  const slides = Array.from(carouselTrack.children).filter((child) => child.tagName === 'IMG');
+  if (slides.length === 0) return;
+
+  let currentIndex = 0;
+  let autoplayTimer = null;
+  const prevButton = document.querySelector('.carousel-arrow-prev');
+  const nextButton = document.querySelector('.carousel-arrow-next');
+
+  const updateDots = () => {
+    if (!carouselDots) return;
+    carouselDots.innerHTML = slides.map((_, index) => `
+      <button class="carousel-dot${index === currentIndex ? ' active' : ''}" type="button" aria-label="Go to image ${index + 1}" aria-current="${index === currentIndex ? 'true' : 'false'}"></button>
+    `).join('');
+
+    carouselDots.querySelectorAll('.carousel-dot').forEach((dot, index) => {
+      dot.addEventListener('click', () => goToSlide(index, 'smooth'));
+    });
+  };
+
+  const getSlideOffset = (index) => {
+    const slide = slides[index];
+    if (!slide) return 0;
+    const gap = 18;
+    const slideWidth = slide.getBoundingClientRect().width;
+    const containerWidth = carouselTrack.clientWidth;
+    const offset = slide.offsetLeft - Math.max(0, (containerWidth - slideWidth) / 2);
+    return Math.max(0, offset + gap * 0.5);
+  };
+
+  const goToSlide = (index, behavior = 'smooth') => {
+    const boundedIndex = Math.max(0, Math.min(slides.length - 1, index));
+    currentIndex = boundedIndex;
+    const target = slides[boundedIndex];
+    if (!target) return;
+    const offset = getSlideOffset(boundedIndex);
+    carouselTrack.scrollTo({ left: offset, behavior });
+    updateDots();
+  };
+
+  const startAutoplay = () => {
+    clearInterval(autoplayTimer);
+    autoplayTimer = window.setInterval(() => {
+      goToSlide(currentIndex + 1);
+    }, 5000);
+  };
+
+  prevButton?.addEventListener('click', () => goToSlide(currentIndex - 1));
+  nextButton?.addEventListener('click', () => goToSlide(currentIndex + 1));
+  carouselTrack.addEventListener('mouseenter', () => clearInterval(autoplayTimer));
+  carouselTrack.addEventListener('mouseleave', startAutoplay);
+  carouselTrack.addEventListener('touchstart', () => clearInterval(autoplayTimer), { passive: true });
+  carouselTrack.addEventListener('touchend', startAutoplay, { passive: true });
+  carouselTrack.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      goToSlide(currentIndex + 1);
+    }
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      goToSlide(currentIndex - 1);
+    }
+  });
+  carouselTrack.setAttribute('tabindex', '0');
+
+  window.addEventListener('resize', () => goToSlide(currentIndex, 'auto'));
+  carouselTrack.addEventListener('scroll', () => {
+    const closestIndex = slides.reduce((closest, slide, index) => {
+      const distance = Math.abs(slide.offsetLeft - carouselTrack.scrollLeft);
+      if (distance < closest.distance) {
+        return { index, distance };
+      }
+      return closest;
+    }, { index: 0, distance: Number.POSITIVE_INFINITY }).index;
+    currentIndex = closestIndex;
+    updateDots();
+  });
+
+  startAutoplay();
+  updateDots();
+  goToSlide(0, 'auto');
+}
+
 window.CycleRide = {
   PRODUCTS,
   formatCurrency,
@@ -151,4 +238,5 @@ window.CycleRide = {
 document.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
   attachAddToCartButtons();
+  initCarousel();
 });
